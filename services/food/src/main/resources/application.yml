@@ -41,6 +41,24 @@ spring:
         # fail donor-facing requests. Capped short so publish/claim fail
         # fast into FoodEventPublisher's catch instead (ADR-008).
         max.block.ms: 3000
+        # Stamps a short, stable token in the __TypeId__ header instead of
+        # this service's own class's fully-qualified name — Pickup consumes
+        # this topic and needs to resolve it to *its own* differently-
+        # packaged copy of the event class (see pickup's consumer config
+        # and FoodClaimedEvent's Javadoc on the pickup side).
+        spring.json.type.mapping: "food.claimed:com.foodloop.food.infrastructure.events.FoodClaimedEvent"
+    consumer:
+      group-id: food-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.foodloop.food.infrastructure.events
+        # Must match the tokens Pickup's producer stamps for these two
+        # event types (see pickup's producer config) — resolves each to
+        # this service's own copy of the class rather than Pickup's, which
+        # isn't on this classpath.
+        spring.json.type.mapping: "pickup.completed:com.foodloop.food.infrastructure.events.PickupCompletedEvent,pickup.no_show:com.foodloop.food.infrastructure.events.PickupNoShowEvent"
 
 server:
   port: 8084

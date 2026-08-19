@@ -215,6 +215,30 @@ services:
       retries: 15
       start_period: 40s
 
+  pickup:
+    build:
+      context: ../..
+      dockerfile: services/pickup/Dockerfile
+    container_name: foodloop-pickup
+    <<: *default-env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+
   api-gateway:
     build:
       context: ../..
@@ -236,6 +260,8 @@ services:
       tenant:
         condition: service_healthy
       food:
+        condition: service_healthy
+      pickup:
         condition: service_healthy
 
 volumes:

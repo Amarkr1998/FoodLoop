@@ -40,7 +40,9 @@ public class FoodEventPublisher {
 
     public void publishFoodClaimed(FoodListing listing, Claim claim) {
         FoodClaimedEvent event = FoodClaimedEvent.of(
-                listing.getTenantId(), listing.getId(), claim.getId(), claim.getReceiverUserId());
+                listing.getTenantId(), listing.getId(), claim.getId(), claim.getReceiverUserId(), listing.getDonorUserId(),
+                listing.getPickupStartTime(), listing.getPickupEndTime(),
+                listing.getLocation().getY(), listing.getLocation().getX());
         send(FoodClaimedEvent.TOPIC, event, listing.getId());
     }
 

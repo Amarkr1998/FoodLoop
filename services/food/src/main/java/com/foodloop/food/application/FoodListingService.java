@@ -1,5 +1,6 @@
 package com.foodloop.food.application;
 
+import com.foodloop.commons.tenant.TenantContext;
 import com.foodloop.commons.web.ApiException;
 import com.foodloop.food.api.CreateFoodListingRequest;
 import com.foodloop.food.domain.FoodListing;
@@ -8,6 +9,8 @@ import com.foodloop.food.domain.FoodStatus;
 import com.foodloop.food.domain.GeoUtils;
 import com.foodloop.food.infrastructure.events.FoodEventPublisher;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -16,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FoodListingService {
+
+    private static final Logger log = LoggerFactory.getLogger(FoodListingService.class);
 
     private final FoodListingRepository foodListingRepository;
     private final FoodEventPublisher eventPublisher;
@@ -74,6 +79,49 @@ public class FoodListingService {
     public Page<FoodListing> searchNearby(
             UUID tenantId, double lat, double lng, double radiusKm, String category, String dietaryType, Pageable pageable) {
         return foodListingRepository.searchNearby(tenantId, lat, lng, radiusKm * 1000.0, category, dietaryType, pageable);
+    }
+
+    /**
+     * Triggered by the Kafka listener consuming pickup.completed.v1, not an
+     * authenticated HTTP caller — {@link TenantContext} is set explicitly
+     * from the event's own tenantId (same pattern as identity's
+     * RegistrationService and pickup's own createFromClaim). Advances
+     * CLAIMED -> PICKUP_SCHEDULED -> PICKED_UP -> COMPLETED in one go, the
+     * same "collapse the intermediate states into one event-driven hop"
+     * approach {@link #publish} uses for DRAFT -> PUBLISHED -> AVAILABLE.
+     */
+    public void applyPickupCompleted(UUID tenantId, UUID foodListingId) {
+        TenantContext.set(tenantId);
+        try {
+            FoodListing listing = get(foodListingId);
+            listing.transitionTo(FoodStatus.PICKUP_SCHEDULED);
+            listing.transitionTo(FoodStatus.PICKED_UP);
+            listing.transitionTo(FoodStatus.COMPLETED);
+            foodListingRepository.save(listing);
+        } catch (ApiException e) {
+            // Redelivery or a listing already advanced past this point —
+            // logged, not rethrown: there is no HTTP caller here to return
+            // an error to, and the alternative (crashing the consumer) would
+            // just replay the same event forever.
+            log.warn("Could not apply pickup completion to foodListingId={}: {}", foodListingId, e.getMessage());
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    /** See {@link #applyPickupCompleted} — same reasoning, no-show path. */
+    public void applyPickupNoShow(UUID tenantId, UUID foodListingId) {
+        TenantContext.set(tenantId);
+        try {
+            FoodListing listing = get(foodListingId);
+            listing.transitionTo(FoodStatus.PICKUP_SCHEDULED);
+            listing.transitionTo(FoodStatus.NO_SHOW);
+            foodListingRepository.save(listing);
+        } catch (ApiException e) {
+            log.warn("Could not apply pickup no-show to foodListingId={}: {}", foodListingId, e.getMessage());
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     private FoodListing getOwned(UUID id, UUID callerUserId) {
