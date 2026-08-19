@@ -5,10 +5,13 @@
 -- environment that hasn't run the infra init script.
 CREATE SCHEMA IF NOT EXISTS identity;
 
+-- id is the Keycloak user id itself (JWT "sub"), not a separately generated
+-- key — see AppUser's Javadoc for why: every other bounded context only
+-- ever has that claim to identify "the user", so it's the one canonical
+-- cross-context user identifier, sourced from the IdP.
 CREATE TABLE identity.app_user (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY,
     tenant_id       UUID NOT NULL,
-    keycloak_id     UUID NOT NULL,
     email           TEXT NOT NULL,
     phone           TEXT,
     display_name    TEXT NOT NULL,
@@ -18,7 +21,6 @@ CREATE TABLE identity.app_user (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     version         BIGINT NOT NULL DEFAULT 0,
 
-    CONSTRAINT uq_app_user_keycloak_id UNIQUE (keycloak_id),
     CONSTRAINT uq_app_user_tenant_email UNIQUE (tenant_id, email),
     CONSTRAINT chk_app_user_status CHECK (status IN ('ACTIVE', 'SUSPENDED', 'DELETED'))
 );

@@ -26,14 +26,14 @@ public class UserProfileService {
     }
 
     @Transactional(readOnly = true)
-    public AppUser getByKeycloakId(UUID keycloakId) {
-        return appUserRepository.findByKeycloakId(keycloakId)
+    public AppUser getById(UUID userId) {
+        return appUserRepository.findById(userId)
                 .orElseThrow(() -> new ApiException("USER_NOT_FOUND", HttpStatus.NOT_FOUND, "No profile for this account."));
     }
 
     @Transactional
-    public AppUser updateProfile(UUID keycloakId, UpdateProfileRequest request) {
-        AppUser user = getByKeycloakId(keycloakId);
+    public AppUser updateProfile(UUID userId, UpdateProfileRequest request) {
+        AppUser user = getById(userId);
         user.updateProfile(request.displayName(), request.phone(), request.locale());
         return appUserRepository.save(user);
     }

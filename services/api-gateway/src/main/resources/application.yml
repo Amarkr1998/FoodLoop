@@ -14,6 +14,16 @@ spring:
                 redis-rate-limiter.replenishRate: 20
                 redis-rate-limiter.burstCapacity: 40
                 key-resolver: "#{@rateLimitKeyResolver}"
+        - id: tenant
+          uri: ${TENANT_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/organizations/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@rateLimitKeyResolver}"
       # Further routes are added here as each bounded-context service ships
       # (docs/architecture/08-phases-mvp-risks.md), not scaffolded ahead of
       # need per spec §63.

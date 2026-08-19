@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -12,27 +11,29 @@ import java.time.Instant;
 import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.UuidGenerator;
 
 /**
  * A user's platform profile. Credentials, MFA, and login live in Keycloak
  * (ADR-004) — this row is the tenant-scoped profile that the rest of the
  * platform (and RLS-protected joins from other bounded contexts) refers to.
+ *
+ * <p>{@code id} is deliberately the Keycloak user id itself (the JWT
+ * {@code sub} claim), not a separately generated primary key: every other
+ * bounded context only ever has that claim to identify "the user" (tenant's
+ * OrgMember.userId, and every future context's equivalent) — minting a
+ * second, locally-generated id here would just create two identifiers for
+ * the same person and force every cross-context reference to pick the
+ * wrong one or add a lookup hop. One canonical id, sourced from the IdP.
  */
 @Entity
 @Table(name = "app_user", schema = "identity")
 public class AppUser {
 
     @Id
-    @GeneratedValue
-    @UuidGenerator
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, updatable = false)
     private UUID tenantId;
-
-    @Column(name = "keycloak_id", nullable = false, updatable = false)
-    private UUID keycloakId;
 
     @Column(nullable = false)
     private String email;
@@ -64,9 +65,9 @@ public class AppUser {
         // JPA
     }
 
-    public AppUser(UUID tenantId, UUID keycloakId, String email, String displayName, String locale) {
+    public AppUser(UUID keycloakId, UUID tenantId, String email, String displayName, String locale) {
+        this.id = keycloakId;
         this.tenantId = tenantId;
-        this.keycloakId = keycloakId;
         this.email = email;
         this.displayName = displayName;
         this.locale = (locale != null && !locale.isBlank()) ? locale : "en";
@@ -90,10 +91,6 @@ public class AppUser {
 
     public UUID getTenantId() {
         return tenantId;
-    }
-
-    public UUID getKeycloakId() {
-        return keycloakId;
     }
 
     public String getEmail() {

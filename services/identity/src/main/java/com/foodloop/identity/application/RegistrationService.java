@@ -50,7 +50,7 @@ public class RegistrationService {
         TenantContext.set(request.tenantId());
         try {
             AppUser user = new AppUser(
-                    request.tenantId(), keycloakId, request.email(), request.displayName(), request.locale());
+                    keycloakId, request.tenantId(), request.email(), request.displayName(), request.locale());
             AppUser saved = appUserRepository.save(user);
 
             eventPublisher.publishUserRegistered(UserRegisteredEvent.of(

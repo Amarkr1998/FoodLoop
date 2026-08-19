@@ -22,17 +22,17 @@ public class UserProfileController {
 
     @GetMapping("/api/v1/users/me")
     public UserProfileResponse me(JwtAuthenticationToken authentication) {
-        AppUser user = userProfileService.getByKeycloakId(keycloakId(authentication));
+        AppUser user = userProfileService.getById(callerUserId(authentication));
         return UserProfileResponse.from(user);
     }
 
     @PatchMapping("/api/v1/users/me")
     public UserProfileResponse updateMe(JwtAuthenticationToken authentication, @Valid @RequestBody UpdateProfileRequest request) {
-        AppUser user = userProfileService.updateProfile(keycloakId(authentication), request);
+        AppUser user = userProfileService.updateProfile(callerUserId(authentication), request);
         return UserProfileResponse.from(user);
     }
 
-    private UUID keycloakId(JwtAuthenticationToken authentication) {
+    private UUID callerUserId(JwtAuthenticationToken authentication) {
         Jwt jwt = authentication.getToken();
         return UUID.fromString(jwt.getSubject());
     }
