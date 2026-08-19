@@ -1,0 +1,59 @@
+{
+  "realm": "foodloop",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "roles": {
+    "realm": [
+      { "name": "DONOR", "description": "Restaurant, hotel, grocery, caterer, home cook listing surplus food" },
+      { "name": "RECEIVER", "description": "Individual or organization claiming food" },
+      { "name": "VOLUNTEER", "description": "Performs pickup/delivery tasks" },
+      { "name": "NGO_ADMIN", "description": "Manages an NGO organization's requests and verification" },
+      { "name": "ORG_ADMIN", "description": "Manages a donor/receiver organization's members and listings" },
+      { "name": "TRUST_OPS", "description": "Reviews risk cases, safety flags, and moderation actions" },
+      { "name": "ADMIN", "description": "Platform administrator" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "foodloop-web",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"]
+    },
+    {
+      "clientId": "foodloop-mobile",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["foodloop://*", "exp://*"]
+    },
+    {
+      "clientId": "foodloop-gateway",
+      "publicClient": false,
+      "secret": "dev-only-gateway-secret-change-me",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "bearerOnly": false
+    },
+    {
+      "clientId": "foodloop-ai-orchestration",
+      "publicClient": false,
+      "secret": "dev-only-ai-orch-secret-change-me",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "description": "Service identity used by AI agents to call business-context APIs through scoped, audited tool calls (docs/architecture/05-ai-agent-architecture.md)"
+    }
+  ]
+}

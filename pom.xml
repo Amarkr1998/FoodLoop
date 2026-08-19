@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.foodloop</groupId>
+  <artifactId>foodloop-parent</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>FoodLoop Parent</name>
+  <description>
+    Enterprise AI-powered surplus-food redistribution platform.
+    Parent aggregator for all backend service modules (docs/architecture/07-infrastructure-deployment.md).
+  </description>
+
+  <properties>
+    <java.version>21</java.version>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spring-boot.version>3.3.2</spring-boot.version>
+    <spring-cloud.version>2023.0.3</spring-cloud.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring-boot.version}</version>
+          <executions>
+            <!-- This project's parent doesn't extend spring-boot-starter-parent
+                 (only imports its dependency BOM), so the repackage goal
+                 isn't auto-bound to the package phase and needs declaring
+                 here — otherwise `mvn package` produces a plain jar with no
+                 main-class manifest and the runtime image fails with
+                 "no main manifest attribute". -->
+            <execution>
+              <goals>
+                <goal>repackage</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <!-- Lets Mockito's inline mock maker (Byte Buddy) run on JDK
+                 versions newer than it has explicit support for yet.
+                 Requires an actual JDK 21 locally (this project's target,
+                 see java.version above) — self-attach on some JDK 25
+                 builds is separately broken and unrelated to this flag. -->
+            <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <modules>
+    <module>services/api-gateway</module>
+    <!--
+      Each bounded-context service (identity, tenant, food, matching, pickup, ngo,
+      notification, trust-safety, impact, ai-orchestration) is added as its own
+      module in the phase that builds it (docs/architecture/08-phases-mvp-risks.md),
+      not scaffolded empty ahead of need (spec §63).
+    -->
+  </modules>
+
+</project>
