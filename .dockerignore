@@ -1,0 +1,15 @@
+**/target
+**/node_modules
+**/.git
+**/.idea
+**/.vscode
+**/dist
+**/build
+**/.next
+**/.expo
+.env
+*.md
+docs/
+infrastructure/terraform
+infrastructure/kubernetes
+infrastructure/helm

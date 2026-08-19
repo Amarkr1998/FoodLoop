@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: identity
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=identity
+    # Deliberately the unprivileged app role, not POSTGRES_USER — see
+    # infrastructure/docker/postgres/init/01-schemas-and-extensions.sql;
+    # POSTGRES_USER is a Postgres superuser and superusers bypass row-level
+    # security entirely (ADR-009).
+    username: ${POSTGRES_APP_USER:foodloop_app}
+    password: ${POSTGRES_APP_PASSWORD:foodloop_app_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: identity
+  flyway:
+    schemas: identity
+    default-schema: identity
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/foodloop}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+foodloop:
+  keycloak:
+    server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8081}
+    realm: foodloop
+    admin-client-id: ${KEYCLOAK_IDENTITY_CLIENT_ID:foodloop-identity}
+    admin-client-secret: ${KEYCLOAK_IDENTITY_CLIENT_SECRET:dev-only-identity-secret-change-me}
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}/v1/traces
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"

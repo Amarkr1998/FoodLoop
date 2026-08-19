@@ -80,12 +80,15 @@
   </build>
 
   <modules>
+    <module>packages/backend-commons</module>
     <module>services/api-gateway</module>
+    <module>services/identity</module>
     <!--
-      Each bounded-context service (identity, tenant, food, matching, pickup, ngo,
-      notification, trust-safety, impact, ai-orchestration) is added as its own
-      module in the phase that builds it (docs/architecture/08-phases-mvp-risks.md),
-      not scaffolded empty ahead of need (spec §63).
+      Each remaining bounded-context service (tenant, food, matching, pickup,
+      ngo, notification, trust-safety, impact, ai-orchestration) is added as
+      its own module in the phase that builds it
+      (docs/architecture/08-phases-mvp-risks.md), not scaffolded empty ahead
+      of need (spec §63).
     -->
   </modules>
 

@@ -3,11 +3,20 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      routes: []
-      # Routes are added here as each bounded-context service ships
-      # (docs/architecture/08-phases-mvp-risks.md). Not scaffolded ahead of
-      # need, per spec §63 — an empty route table with working edge
-      # security/rate-limiting/tracing is Phase 1's actual deliverable.
+      routes:
+        - id: identity
+          uri: ${IDENTITY_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/auth/**,/api/v1/users/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@rateLimitKeyResolver}"
+      # Further routes are added here as each bounded-context service ships
+      # (docs/architecture/08-phases-mvp-risks.md), not scaffolded ahead of
+      # need per spec §63.
   security:
     oauth2:
       resourceserver:
