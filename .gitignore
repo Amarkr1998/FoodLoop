@@ -1,0 +1,45 @@
+# Java / Maven
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Node / JS-TS
+node_modules/
+dist/
+build/
+.next/
+.expo/
+*.tsbuildinfo
+coverage/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker/volumes/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.tfvars.example
+
+# OS
+Thumbs.db
