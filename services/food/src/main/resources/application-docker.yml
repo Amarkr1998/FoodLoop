@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/foodloop?currentSchema=food,public
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/foodloop
+  kafka:
+    bootstrap-servers: kafka:9092

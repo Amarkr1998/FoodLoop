@@ -1,8 +1,12 @@
 spring:
   application:
-    name: tenant
+    name: food
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=tenant
+    # currentSchema replaces the whole search_path, not just prepends to it
+    # — "food,public" is required (not just "food") so PostGIS's geography
+    # type (installed in public) still resolves unqualified in migrations
+    # and entity mappings.
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=food,public
     # Deliberately the unprivileged app role, not POSTGRES_USER — see
     # infrastructure/docker/postgres/init/01-schemas-and-extensions.sql;
     # POSTGRES_USER is a Postgres superuser and superusers bypass row-level
@@ -15,10 +19,10 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        default_schema: tenant
+        default_schema: food
   flyway:
-    schemas: tenant
-    default-schema: tenant
+    schemas: food
+    default-schema: food
     locations: classpath:db/migration
   security:
     oauth2:
@@ -31,15 +35,15 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        # See OrganizationEventPublisher — KafkaTemplate.send() blocks (up
-        # to this long) and throws synchronously on first send if metadata
-        # can't be fetched; capped short so organization creation fails
-        # fast into the publisher's catch instead of stalling for the 60s
-        # default.
+        # KafkaTemplate.send() blocks the caller (up to this long) fetching
+        # topic metadata on first send, and throws synchronously if it
+        # can't — default is 60s, which would make a Kafka outage stall or
+        # fail donor-facing requests. Capped short so publish/claim fail
+        # fast into FoodEventPublisher's catch instead (ADR-008).
         max.block.ms: 3000
 
 server:
-  port: 8083
+  port: 8084
 
 management:
   endpoints:

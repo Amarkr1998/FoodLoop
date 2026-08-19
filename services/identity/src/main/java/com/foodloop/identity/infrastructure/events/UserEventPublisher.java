@@ -11,6 +11,14 @@ import org.springframework.stereotype.Component;
  * failures are logged, not propagated to the caller, consistent with
  * critical-path availability (ADR-008's principle applied to messaging,
  * not just AI providers).
+ *
+ * <p>{@code KafkaTemplate.send()} is only asynchronous once partition
+ * metadata for the target topic is cached — the first send to a topic
+ * blocks the calling thread (up to {@code max.block.ms}, capped short via
+ * application.yml) fetching it, and throws <em>synchronously</em>, not via
+ * the returned future, if that fails. Without the try/catch here, a Kafka
+ * outage would fail registration outright — exactly what "never depends on
+ * Kafka being reachable" is supposed to prevent.
  */
 @Component
 public class UserEventPublisher {
@@ -24,11 +32,15 @@ public class UserEventPublisher {
     }
 
     public void publishUserRegistered(UserRegisteredEvent event) {
-        kafkaTemplate.send(UserRegisteredEvent.TOPIC, event.tenantId().toString(), event)
-                .whenComplete((result, ex) -> {
-                    if (ex != null) {
-                        log.warn("Failed to publish USER_REGISTERED for userId={}", event.userId(), ex);
-                    }
-                });
+        try {
+            kafkaTemplate.send(UserRegisteredEvent.TOPIC, event.tenantId().toString(), event)
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.warn("Failed to publish USER_REGISTERED for userId={}", event.userId(), ex);
+                        }
+                    });
+        } catch (RuntimeException e) {
+            log.warn("Failed to publish USER_REGISTERED for userId={}", event.userId(), e);
+        }
     }
 }

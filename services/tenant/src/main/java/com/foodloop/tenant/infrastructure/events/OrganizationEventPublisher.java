@@ -9,7 +9,10 @@ import org.springframework.stereotype.Component;
 /**
  * Best-effort publish, same principle as identity's UserEventPublisher:
  * creating an organization succeeding never depends on Kafka being
- * reachable.
+ * reachable. See UserEventPublisher's Javadoc for why the try/catch here
+ * is load-bearing, not defensive boilerplate: KafkaTemplate.send() throws
+ * synchronously (not just via the returned future) on the first send to a
+ * topic when metadata can't be fetched.
  */
 @Component
 public class OrganizationEventPublisher {
@@ -25,11 +28,15 @@ public class OrganizationEventPublisher {
     public void publishOrganizationCreated(Organization organization) {
         OrganizationCreatedEvent event = OrganizationCreatedEvent.of(
                 organization.getTenantId(), organization.getId(), organization.getName(), organization.getType().name());
-        kafkaTemplate.send(OrganizationCreatedEvent.TOPIC, event.tenantId().toString(), event)
-                .whenComplete((result, ex) -> {
-                    if (ex != null) {
-                        log.warn("Failed to publish ORG_CREATED for organizationId={}", organization.getId(), ex);
-                    }
-                });
+        try {
+            kafkaTemplate.send(OrganizationCreatedEvent.TOPIC, event.tenantId().toString(), event)
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.warn("Failed to publish ORG_CREATED for organizationId={}", organization.getId(), ex);
+                        }
+                    });
+        } catch (RuntimeException e) {
+            log.warn("Failed to publish ORG_CREATED for organizationId={}", organization.getId(), e);
+        }
     }
 }

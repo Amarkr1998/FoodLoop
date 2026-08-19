@@ -30,6 +30,12 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # See UserEventPublisher — KafkaTemplate.send() blocks (up to this
+        # long) and throws synchronously on first send if metadata can't be
+        # fetched; capped short so registration fails fast into the
+        # publisher's catch instead of stalling for the 60s default.
+        max.block.ms: 3000
 
 foodloop:
   keycloak:
