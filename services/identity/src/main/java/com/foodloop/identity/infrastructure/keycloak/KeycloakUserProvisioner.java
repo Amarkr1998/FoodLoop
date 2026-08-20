@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Component;
 
@@ -53,6 +54,20 @@ public class KeycloakUserProvisioner {
             throw new KeycloakProvisioningException(
                     "Keycloak user creation failed with status " + response.getStatus());
         }
+    }
+
+    /**
+     * Phase 10's volunteer onboarding is this method's first caller — no
+     * user has ever been granted a realm role by this platform before now
+     * (every prior authorization check reads whatever roles a token already
+     * carries, never assigns one). A role granted here only appears in a
+     * <em>new</em> access token — Keycloak doesn't retroactively update a
+     * token already issued — so a caller must re-authenticate to actually
+     * use it; that's standard OIDC behavior, not a bug to work around.
+     */
+    public void assignRealmRole(UUID userId, String roleName) {
+        RoleRepresentation role = keycloakAdminClient.realm(properties.realm()).roles().get(roleName).toRepresentation();
+        keycloakAdminClient.realm(properties.realm()).users().get(userId.toString()).roles().realmLevel().add(List.of(role));
     }
 
     private UUID extractUserId(Response response) {

@@ -57,6 +57,10 @@ public class PickupTask {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    /** Set only once a volunteer claims this task (spec Phase 10) — cleared again if they back out. */
+    @Column(name = "assigned_volunteer_id")
+    private UUID assignedVolunteerId;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -92,6 +96,31 @@ public class PickupTask {
 
     public void reportNoShow() {
         transitionTo(PickupStatus.NO_SHOW);
+    }
+
+    /** Donor or receiver opts into volunteer-mediated pickup instead of the direct handoff (spec Phase 10). */
+    public void requestVolunteer() {
+        transitionTo(PickupStatus.UNASSIGNED);
+    }
+
+    /** A volunteer claims this task — mirrors Food's claim pattern, no automatic/AI matching in this phase. */
+    public void assignVolunteer(UUID volunteerUserId) {
+        transitionTo(PickupStatus.ASSIGNED);
+        this.assignedVolunteerId = volunteerUserId;
+    }
+
+    public void volunteerEnRoute() {
+        transitionTo(PickupStatus.EN_ROUTE);
+    }
+
+    public void volunteerArrived() {
+        transitionTo(PickupStatus.ARRIVED);
+    }
+
+    /** The assigned volunteer backs out — returns to the open pool rather than staying stuck on them. */
+    public void unassignVolunteer() {
+        transitionTo(PickupStatus.UNASSIGNED);
+        this.assignedVolunteerId = null;
     }
 
     private void transitionTo(PickupStatus target) {
@@ -144,6 +173,10 @@ public class PickupTask {
 
     public Instant getCompletedAt() {
         return completedAt;
+    }
+
+    public UUID getAssignedVolunteerId() {
+        return assignedVolunteerId;
     }
 
     public Instant getCreatedAt() {
