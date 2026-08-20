@@ -1,17 +1,15 @@
-package com.foodloop.ai;
+package com.foodloop.notification;
 
 import com.foodloop.commons.tenant.TenantAutoConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @Import(TenantAutoConfiguration.class)
-@EnableScheduling
-public class AiOrchestrationServiceApplication {
+public class NotificationServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(AiOrchestrationServiceApplication.class, args);
+        SpringApplication.run(NotificationServiceApplication.class, args);
     }
 }

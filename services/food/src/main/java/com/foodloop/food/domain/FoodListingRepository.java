@@ -1,5 +1,7 @@
 package com.foodloop.food.domain;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface FoodListingRepository extends JpaRepository<FoodListing, UUID> {
+
+    /** The Food Rescue Agent's expiry sweep (spec §18) — every AVAILABLE listing whose expiry falls before {@code before}. */
+    List<FoodListing> findByTenantIdAndStatusAndExpiryTimeBefore(UUID tenantId, FoodStatus status, Instant before);
 
     /**
      * Radius search over approx_location (§12, §33 — public discovery uses

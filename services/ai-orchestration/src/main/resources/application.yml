@@ -53,6 +53,21 @@ foodloop:
       base-url: ${FOOD_SERVICE_URI:http://localhost:8084}
     matching:
       base-url: ${MATCHING_SERVICE_URI:http://localhost:8087}
+    tenant:
+      base-url: ${TENANT_SERVICE_URI:http://localhost:8083}
+    notification:
+      base-url: ${NOTIFICATION_SERVICE_URI:http://localhost:8088}
+  rescue:
+    # RescueScheduler's sweep cadence and the two expiry checkpoints (spec
+    # §18's "e.g., T-4h, T-1h"), plus the deterministic candidate-search
+    # policy: wider radius and human-ops escalation once inside the final
+    # window. All configurable per environment, not hardcoded in code.
+    sweep-interval-ms: ${RESCUE_SWEEP_INTERVAL_MS:300000}
+    threshold-minutes-4h: ${RESCUE_THRESHOLD_MINUTES_4H:240}
+    threshold-minutes-1h: ${RESCUE_THRESHOLD_MINUTES_1H:60}
+    notify-top-n: ${RESCUE_NOTIFY_TOP_N:3}
+    radius-km-4h: ${RESCUE_RADIUS_KM_4H:10}
+    radius-km-1h: ${RESCUE_RADIUS_KM_1H:25}
   service-account:
     # This service's own Keycloak client-credentials identity (see
     # infrastructure/docker/keycloak/foodloop-realm.json's

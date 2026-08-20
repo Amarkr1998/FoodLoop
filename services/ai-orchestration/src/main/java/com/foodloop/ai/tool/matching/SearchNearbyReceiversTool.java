@@ -7,17 +7,19 @@ import com.foodloop.ai.tool.AgentTool;
 import com.foodloop.ai.tool.AuthorizationResult;
 import com.foodloop.commons.tenant.TenantContext;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 /**
- * Read tool granted to Matching (docs/architecture/05 §5, adapted for Phase
- * 7 — see AgentPermissionRegistry's Javadoc). Returns the deterministic
- * MatchingEngine's already-ranked candidate set; the agent's LLM step only
- * re-ranks/explains among these, never invents a candidate outside it.
+ * Read tool granted to Matching and Rescue (docs/architecture/05 §5, adapted
+ * for Phase 7/8 — see AgentPermissionRegistry's Javadoc). Returns the
+ * deterministic MatchingEngine's already-ranked candidate set; an agent's
+ * reasoning step only re-ranks/explains among these, never invents a
+ * candidate outside it. {@code radiusKm} is caller-supplied (nullable) so
+ * Rescue can expand its search radius at a later expiry threshold without a
+ * second copy of this tool.
  */
 @Component
-public class SearchNearbyReceiversTool implements AgentTool<UUID, List<MatchCandidateDto>> {
+public class SearchNearbyReceiversTool implements AgentTool<SearchNearbyReceiversInput, List<MatchCandidateDto>> {
 
     private static final double DEFAULT_RADIUS_KM = 10.0;
 
@@ -33,20 +35,21 @@ public class SearchNearbyReceiversTool implements AgentTool<UUID, List<MatchCand
     }
 
     @Override
-    public AuthorizationResult authorize(AgentCallerContext caller, UUID input) {
+    public AuthorizationResult authorize(AgentCallerContext caller, SearchNearbyReceiversInput input) {
         return AuthorizationResult.allow();
     }
 
     @Override
-    public void validateInput(UUID input) {
-        if (input == null) {
+    public void validateInput(SearchNearbyReceiversInput input) {
+        if (input.foodListingId() == null) {
             throw new IllegalArgumentException("foodListingId must not be null");
         }
     }
 
     @Override
-    public List<MatchCandidateDto> execute(UUID input) {
-        return matchingServiceClient.getCandidates(TenantContext.get(), input, DEFAULT_RADIUS_KM);
+    public List<MatchCandidateDto> execute(SearchNearbyReceiversInput input) {
+        double radiusKm = input.radiusKm() != null ? input.radiusKm() : DEFAULT_RADIUS_KM;
+        return matchingServiceClient.getCandidates(TenantContext.get(), input.foodListingId(), radiusKm);
     }
 
     @Override

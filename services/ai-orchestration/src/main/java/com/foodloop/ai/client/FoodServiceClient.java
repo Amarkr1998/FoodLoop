@@ -1,7 +1,9 @@
 package com.foodloop.ai.client;
 
+import java.util.List;
 import java.util.UUID;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -43,6 +45,20 @@ public class FoodServiceClient {
                 .body(payload)
                 .retrieve()
                 .body(FoodListingDto.class);
+    }
+
+    /** The Food Rescue Agent's expiry sweep (spec §18) calls this once per tenant per configured threshold. */
+    public List<FoodListingDto> getExpiringListings(UUID tenantId, int withinMinutes) {
+        List<FoodListingDto> listings = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/food-listings/expiring")
+                        .queryParam("withinMinutes", withinMinutes)
+                        .build())
+                .headers(headers -> authorize(headers, tenantId))
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<FoodListingDto>>() {
+                });
+        return listings != null ? listings : List.of();
     }
 
     private void authorize(HttpHeaders headers, UUID tenantId) {

@@ -8,6 +8,7 @@ import com.foodloop.food.domain.FoodAiMetadata;
 import com.foodloop.food.domain.FoodListing;
 import jakarta.validation.Valid;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -76,6 +77,15 @@ public class FoodListingController {
     @GetMapping("/api/v1/food-listings/{id}")
     public FoodListingResponse get(@PathVariable UUID id) {
         return FoodListingResponse.from(foodListingService.get(id));
+    }
+
+    /** The Food Rescue Agent's expiry sweep calls this per tenant per threshold (spec §18). */
+    @GetMapping("/api/v1/food-listings/expiring")
+    public List<FoodListingResponse> expiring(
+            JwtAuthenticationToken authentication, @RequestParam int withinMinutes) {
+        return foodListingService.findExpiringSoon(tenantId(authentication), withinMinutes).stream()
+                .map(FoodListingResponse::from)
+                .toList();
     }
 
     @GetMapping("/api/v1/food-listings")

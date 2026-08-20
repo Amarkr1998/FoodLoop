@@ -33,9 +33,12 @@ public class AgentPermissionRegistry {
             // instead of being separate agent-visible tool calls.
             Map.entry("matching", Set.of(
                     "getFoodListing", "searchNearbyReceivers", "createMatchProposal")),
+            // createSafetyCase (Trust & Safety's escalation-marker tool, per §5's table)
+            // isn't included: Trust & Safety doesn't exist yet either (Phase 9); Rescue's
+            // own escalation is the standard AgentRun.escalate path every agent already
+            // uses, not a separate tool call — see MatchingAgent's precedent.
             Map.entry("rescue", Set.of(
-                    "getFoodListing", "searchNearbyFood", "searchNearbyNGOs",
-                    "sendNotification", "createMatchProposal", "createSafetyCase")),
+                    "getFoodListing", "searchNearbyReceivers", "sendNotification", "createMatchProposal")),
             Map.entry("ngo-coordination", Set.of(
                     "getNGORequirements", "searchNearbyFood", "checkFoodEligibility",
                     "createMatchProposal", "schedulePickup")),

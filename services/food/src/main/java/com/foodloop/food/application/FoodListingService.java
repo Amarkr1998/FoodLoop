@@ -9,6 +9,8 @@ import com.foodloop.food.domain.FoodListingRepository;
 import com.foodloop.food.domain.FoodStatus;
 import com.foodloop.food.domain.GeoUtils;
 import com.foodloop.food.infrastructure.events.FoodEventPublisher;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +90,13 @@ public class FoodListingService {
         return foodListingRepository.findById(id)
                 .orElseThrow(() -> new ApiException("FOOD_LISTING_NOT_FOUND", HttpStatus.NOT_FOUND,
                         "No food listing found with id " + id + "."));
+    }
+
+    /** The Food Rescue Agent's expiry sweep (spec §18) calls this per tenant, per configured threshold. */
+    @Transactional(readOnly = true)
+    public List<FoodListing> findExpiringSoon(UUID tenantId, int withinMinutes) {
+        Instant cutoff = Instant.now().plusSeconds(withinMinutes * 60L);
+        return foodListingRepository.findByTenantIdAndStatusAndExpiryTimeBefore(tenantId, FoodStatus.AVAILABLE, cutoff);
     }
 
     @Transactional(readOnly = true)

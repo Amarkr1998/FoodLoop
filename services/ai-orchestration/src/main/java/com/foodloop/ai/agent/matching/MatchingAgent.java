@@ -15,6 +15,7 @@ import com.foodloop.ai.tool.ToolExecutor;
 import com.foodloop.ai.tool.food.GetFoodListingTool;
 import com.foodloop.ai.tool.matching.CreateMatchProposalCommand;
 import com.foodloop.ai.tool.matching.CreateMatchProposalTool;
+import com.foodloop.ai.tool.matching.SearchNearbyReceiversInput;
 import com.foodloop.ai.tool.matching.SearchNearbyReceiversTool;
 import java.util.Set;
 import java.util.UUID;
@@ -160,7 +161,8 @@ public class MatchingAgent {
 
             @Override
             public MatchingState execute(MatchingState state) {
-                var candidates = toolExecutor.run(searchNearbyReceiversTool, caller, state.listingId());
+                var candidates = toolExecutor.run(searchNearbyReceiversTool, caller,
+                        SearchNearbyReceiversInput.defaultRadius(state.listingId()));
                 MatchingState withCandidates = state.withCandidates(candidates);
                 return candidates.isEmpty() ? withCandidates.withNoCandidates() : withCandidates;
             }

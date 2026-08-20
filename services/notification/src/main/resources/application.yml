@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: notification
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=notification
+    # Deliberately the unprivileged app role, not POSTGRES_USER — see
+    # infrastructure/docker/postgres/init/01-schemas-and-extensions.sql;
+    # POSTGRES_USER is a Postgres superuser and superusers bypass row-level
+    # security entirely (ADR-009).
+    username: ${POSTGRES_APP_USER:foodloop_app}
+    password: ${POSTGRES_APP_PASSWORD:foodloop_app_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: notification
+  flyway:
+    schemas: notification
+    default-schema: notification
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/foodloop}
+
+server:
+  port: 8088
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}/v1/traces
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
