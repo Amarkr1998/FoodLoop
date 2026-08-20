@@ -105,9 +105,9 @@ class MatchingAgentTest {
                 .thenReturn(List.of(
                         new MatchCandidateDto(chosenOrgId, "Close NGO", 400, new BigDecimal("0.9")),
                         new MatchCandidateDto(otherOrgId, "Far NGO", 8000, new BigDecimal("0.3"))));
-        when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(chosenOrgId), any()))
+        when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(chosenOrgId), any(), any()))
                 .thenReturn(new MatchProposalDto(UUID.randomUUID(), listingId, chosenOrgId,
-                        new BigDecimal("400"), new BigDecimal("0.9"), "Closest and highest scored.", "PROPOSED"));
+                        new BigDecimal("400"), new BigDecimal("0.9"), "Closest and highest scored.", null, "PROPOSED"));
         scriptedProvider.respondWith("{\"receiverOrgId\":\"" + chosenOrgId + "\",\"rationale\":\"Closest and highest scored.\"}");
 
         TenantContext.set(tenantId);

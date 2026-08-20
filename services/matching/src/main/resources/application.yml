@@ -35,6 +35,11 @@ spring:
         # KafkaTemplate.send() blocks (up to this long) and throws
         # synchronously on first send if metadata can't be fetched.
         max.block.ms: 3000
+        # Stamps a short, stable token in the __TypeId__ header instead of
+        # this service's own class's fully-qualified name — NGO consumes
+        # this topic and needs to resolve it to *its own* differently-packaged
+        # copy of the event class (see NGO's consumer config).
+        spring.json.type.mapping: "match.proposed:com.foodloop.matching.infrastructure.events.MatchProposedEvent"
 
 foodloop:
   services:

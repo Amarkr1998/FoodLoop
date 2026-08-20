@@ -34,4 +34,16 @@ public class TenantServiceClient {
                 });
         return tenants != null ? tenants : List.of();
     }
+
+    /** The NGO Coordination Agent's search-center lookup (spec §19) — the NGO org's own location. */
+    public OrganizationDto getOrganization(java.util.UUID tenantId, java.util.UUID organizationId) {
+        return restClient.get()
+                .uri("/api/v1/organizations/{id}", organizationId)
+                .headers(headers -> {
+                    headers.setBearerAuth(tokenProvider.getAccessToken());
+                    headers.set("X-Tenant-Id", tenantId.toString());
+                })
+                .retrieve()
+                .body(OrganizationDto.class);
+    }
 }

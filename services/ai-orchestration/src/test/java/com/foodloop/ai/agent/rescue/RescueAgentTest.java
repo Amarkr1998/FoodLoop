@@ -113,9 +113,9 @@ class RescueAgentTest {
         when(foodServiceClient.getFoodListing(eq(tenantId), eq(listingId))).thenReturn(availableListing(listingId));
         when(matchingServiceClient.getCandidates(eq(tenantId), eq(listingId), eq(10.0)))
                 .thenReturn(List.of(new MatchCandidateDto(orgId, "Nearby NGO", 500, new BigDecimal("0.8"))));
-        when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(orgId), any()))
+        when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(orgId), any(), any()))
                 .thenReturn(new MatchProposalDto(UUID.randomUUID(), listingId, orgId,
-                        new BigDecimal("500"), new BigDecimal("0.8"), "auto", "PROPOSED"));
+                        new BigDecimal("500"), new BigDecimal("0.8"), "auto", null, "PROPOSED"));
         when(notificationServiceClient.queue(eq(tenantId), eq(orgId), any(), any(), any(), any()))
                 .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, "IN_APP", "subj", "QUEUED"));
 
@@ -125,7 +125,7 @@ class RescueAgentTest {
         assertThat(result.agentRun().getStatus()).isEqualTo(AgentRunStatus.COMPLETED);
         assertThat(result.agentRun().isEscalated()).isFalse();
         verify(notificationServiceClient, times(1)).queue(eq(tenantId), eq(orgId), any(), any(), any(), any());
-        verify(matchingServiceClient, times(1)).createProposal(eq(tenantId), eq(listingId), eq(orgId), any());
+        verify(matchingServiceClient, times(1)).createProposal(eq(tenantId), eq(listingId), eq(orgId), any(), any());
     }
 
     @Test
@@ -136,9 +136,9 @@ class RescueAgentTest {
         when(foodServiceClient.getFoodListing(eq(tenantId), eq(listingId))).thenReturn(availableListing(listingId));
         when(matchingServiceClient.getCandidates(eq(tenantId), eq(listingId), eq(25.0)))
                 .thenReturn(List.of(new MatchCandidateDto(orgId, "Wider NGO", 20000, new BigDecimal("0.4"))));
-        when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(orgId), any()))
+        when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(orgId), any(), any()))
                 .thenReturn(new MatchProposalDto(UUID.randomUUID(), listingId, orgId,
-                        new BigDecimal("20000"), new BigDecimal("0.4"), "auto", "PROPOSED"));
+                        new BigDecimal("20000"), new BigDecimal("0.4"), "auto", null, "PROPOSED"));
         when(notificationServiceClient.queue(eq(tenantId), eq(orgId), any(), any(), any(), any()))
                 .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, "IN_APP", "subj", "QUEUED"));
 
@@ -174,7 +174,7 @@ class RescueAgentTest {
         when(foodServiceClient.getFoodListing(eq(tenantId), eq(listingId))).thenReturn(availableListing(listingId));
         when(matchingServiceClient.getCandidates(eq(tenantId), eq(listingId), eq(10.0)))
                 .thenReturn(List.of(new MatchCandidateDto(orgId, "Nearby NGO", 500, new BigDecimal("0.8"))));
-        when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(orgId), any()))
+        when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(orgId), any(), any()))
                 .thenThrow(new ApiException("MATCH_ALREADY_PROPOSED", HttpStatus.CONFLICT, "already open"));
         when(notificationServiceClient.queue(eq(tenantId), eq(orgId), any(), any(), any(), any()))
                 .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, "IN_APP", "subj", "QUEUED"));

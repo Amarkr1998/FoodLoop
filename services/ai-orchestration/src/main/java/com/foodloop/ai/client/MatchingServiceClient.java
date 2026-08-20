@@ -42,10 +42,15 @@ public class MatchingServiceClient {
     }
 
     public MatchProposalDto createProposal(UUID tenantId, UUID foodListingId, UUID receiverOrgId, String aiRationale) {
+        return createProposal(tenantId, foodListingId, receiverOrgId, aiRationale, null);
+    }
+
+    public MatchProposalDto createProposal(
+            UUID tenantId, UUID foodListingId, UUID receiverOrgId, String aiRationale, UUID ngoRequestId) {
         return restClient.post()
                 .uri("/api/v1/matches")
                 .headers(headers -> authorize(headers, tenantId))
-                .body(new CreateMatchProposalPayload(foodListingId, receiverOrgId, aiRationale))
+                .body(new CreateMatchProposalPayload(foodListingId, receiverOrgId, aiRationale, ngoRequestId))
                 .retrieve()
                 .body(MatchProposalDto.class);
     }

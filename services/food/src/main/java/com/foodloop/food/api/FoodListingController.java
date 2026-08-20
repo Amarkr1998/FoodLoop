@@ -1,5 +1,6 @@
 package com.foodloop.food.api;
 
+import com.foodloop.commons.tenant.TenantContext;
 import com.foodloop.commons.web.ApiException;
 import com.foodloop.food.application.ClaimService;
 import com.foodloop.food.application.FoodListingService;
@@ -42,7 +43,7 @@ public class FoodListingController {
     @PostMapping("/api/v1/food-listings")
     public ResponseEntity<FoodListingResponse> create(
             JwtAuthenticationToken authentication, @Valid @RequestBody CreateFoodListingRequest request) {
-        FoodListing listing = foodListingService.createDraft(tenantId(authentication), callerUserId(authentication), request);
+        FoodListing listing = foodListingService.createDraft(tenantId(), callerUserId(authentication), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(FoodListingResponse.from(listing));
     }
 
@@ -107,16 +108,15 @@ public class FoodListingController {
 
     /** The Food Rescue Agent's expiry sweep calls this per tenant per threshold (spec §18). */
     @GetMapping("/api/v1/food-listings/expiring")
-    public List<FoodListingResponse> expiring(
-            JwtAuthenticationToken authentication, @RequestParam int withinMinutes) {
-        return foodListingService.findExpiringSoon(tenantId(authentication), withinMinutes).stream()
+    public List<FoodListingResponse> expiring(@RequestParam int withinMinutes) {
+        return foodListingService.findExpiringSoon(tenantId(), withinMinutes).stream()
                 .map(FoodListingResponse::from)
                 .toList();
     }
 
+    /** Also the NGO Coordination Agent's searchNearbyFood tool (spec §19) — same delegated-caller path as expiring above. */
     @GetMapping("/api/v1/food-listings")
     public Page<FoodListingResponse> search(
-            JwtAuthenticationToken authentication,
             @RequestParam double lat,
             @RequestParam double lng,
             @RequestParam(defaultValue = "5") double radiusKm,
@@ -126,7 +126,7 @@ public class FoodListingController {
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
         return foodListingService
-                .searchNearby(tenantId(authentication), lat, lng, radiusKm, category, dietaryType, pageable)
+                .searchNearby(tenantId(), lat, lng, radiusKm, category, dietaryType, pageable)
                 .map(FoodListingResponse::fromPublic);
     }
 
@@ -177,11 +177,21 @@ public class FoodListingController {
         return UUID.fromString(authentication.getToken().getSubject());
     }
 
-    private UUID tenantId(JwtAuthenticationToken authentication) {
-        String tenantClaim = authentication.getToken().getClaimAsString("tenant_id");
-        if (tenantClaim == null) {
+    /**
+     * {@link TenantContext} (set by {@code TenantFilter} before this
+     * controller runs) rather than re-parsing the JWT's {@code tenant_id}
+     * claim directly: the claim is null for a trusted service-account caller
+     * (e.g. the Rescue/NGO Coordination agents' delegated-tenant-header
+     * calls — see TenantFilter's Javadoc), and TenantContext already
+     * resolves both that case and the ordinary human-JWT-claim case
+     * uniformly, so re-deriving it here a second, narrower way would just
+     * reintroduce the gap TenantFilter exists to close.
+     */
+    private UUID tenantId() {
+        UUID tenantId = TenantContext.get();
+        if (tenantId == null) {
             throw new ApiException("TENANT_NOT_RESOLVED", HttpStatus.BAD_REQUEST, "Request's JWT carried no tenant_id claim.");
         }
-        return UUID.fromString(tenantClaim);
+        return tenantId;
     }
 }

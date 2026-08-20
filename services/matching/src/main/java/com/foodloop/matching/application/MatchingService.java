@@ -75,6 +75,12 @@ public class MatchingService {
 
     @Transactional
     public MatchProposal createProposal(UUID tenantId, UUID foodListingId, UUID receiverOrgId, String aiRationale) {
+        return createProposal(tenantId, foodListingId, receiverOrgId, aiRationale, null);
+    }
+
+    @Transactional
+    public MatchProposal createProposal(
+            UUID tenantId, UUID foodListingId, UUID receiverOrgId, String aiRationale, UUID ngoRequestId) {
         FoodListingDto listing = requireAvailableListing(tenantId, foodListingId);
 
         OrganizationDto org = tenantServiceClient.getOrganization(tenantId, receiverOrgId);
@@ -101,7 +107,7 @@ public class MatchingService {
 
         BigDecimal score = MatchingEngine.score(distanceMeters, MAX_PROPOSAL_RADIUS_METERS, listing.expiryTime(), Instant.now());
         MatchProposal proposal = matchProposalRepository.save(new MatchProposal(
-                tenantId, foodListingId, receiverOrgId, BigDecimal.valueOf(distanceMeters), score, aiRationale));
+                tenantId, foodListingId, receiverOrgId, BigDecimal.valueOf(distanceMeters), score, aiRationale, ngoRequestId));
         eventPublisher.publishMatchProposed(proposal);
         return proposal;
     }

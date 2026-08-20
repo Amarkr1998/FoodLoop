@@ -7,5 +7,5 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MatchProposalDto(
         UUID id, UUID foodListingId, UUID receiverOrgId, BigDecimal distanceMeters, BigDecimal score,
-        String aiRationale, String status) {
+        String aiRationale, UUID ngoRequestId, String status) {
 }

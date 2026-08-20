@@ -21,7 +21,7 @@ public class MatchEventPublisher {
     public void publishMatchProposed(MatchProposal proposal) {
         MatchProposedEvent event = MatchProposedEvent.of(
                 proposal.getTenantId(), proposal.getId(), proposal.getFoodListingId(),
-                proposal.getReceiverOrgId(), proposal.getScore());
+                proposal.getReceiverOrgId(), proposal.getScore(), proposal.getNgoRequestId());
         try {
             kafkaTemplate.send(MatchProposedEvent.TOPIC, proposal.getId().toString(), event)
                     .whenComplete((result, ex) -> {

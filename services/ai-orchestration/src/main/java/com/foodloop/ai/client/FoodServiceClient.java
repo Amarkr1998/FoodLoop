@@ -71,6 +71,24 @@ public class FoodServiceClient {
         return listings != null ? listings : List.of();
     }
 
+    /** The NGO Coordination Agent's searchNearbyFood tool (spec §19) — same public geo search a receiver's app uses. */
+    public List<FoodSearchResultDto> searchNearby(
+            UUID tenantId, double lat, double lng, double radiusKm, String category) {
+        PageDto<FoodSearchResultDto> page = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/food-listings")
+                        .queryParam("lat", lat)
+                        .queryParam("lng", lng)
+                        .queryParam("radiusKm", radiusKm)
+                        .queryParamIfPresent("category", java.util.Optional.ofNullable(category))
+                        .build())
+                .headers(headers -> authorize(headers, tenantId))
+                .retrieve()
+                .body(new ParameterizedTypeReference<PageDto<FoodSearchResultDto>>() {
+                });
+        return page != null && page.content() != null ? page.content() : List.of();
+    }
+
     private void authorize(HttpHeaders headers, UUID tenantId) {
         headers.setBearerAuth(tokenProvider.getAccessToken());
         headers.set("X-Tenant-Id", tenantId.toString());

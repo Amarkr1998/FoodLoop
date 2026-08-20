@@ -112,11 +112,11 @@
     <module>services/matching</module>
     <module>services/notification</module>
     <module>services/impact</module>
+    <module>services/ngo</module>
     <!--
-      Each remaining bounded-context service (ngo, trust-safety) is added
-      as its own module in the phase that builds it
-      (docs/architecture/08-phases-mvp-risks.md), not scaffolded empty
-      ahead of need (spec §63).
+      Each remaining bounded-context service (trust-safety) is added
+      as its own module when it's built (docs/architecture/08-phases-mvp-risks.md),
+      not scaffolded empty ahead of need (spec §63).
     -->
   </modules>
 

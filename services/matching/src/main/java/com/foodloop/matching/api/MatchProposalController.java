@@ -35,7 +35,7 @@ public class MatchProposalController {
     @PostMapping("/api/v1/matches")
     public ResponseEntity<MatchProposalResponse> create(@Valid @RequestBody CreateMatchProposalRequest request) {
         var proposal = matchingService.createProposal(
-                currentTenantId(), request.foodListingId(), request.receiverOrgId(), request.aiRationale());
+                currentTenantId(), request.foodListingId(), request.receiverOrgId(), request.aiRationale(), request.ngoRequestId());
         return ResponseEntity.status(HttpStatus.CREATED).body(MatchProposalResponse.from(proposal));
     }
 

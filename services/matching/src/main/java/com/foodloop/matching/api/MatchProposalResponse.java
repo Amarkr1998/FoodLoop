@@ -13,6 +13,7 @@ public record MatchProposalResponse(
         BigDecimal distanceMeters,
         BigDecimal score,
         String aiRationale,
+        UUID ngoRequestId,
         String status,
         Instant createdAt) {
 
@@ -25,6 +26,7 @@ public record MatchProposalResponse(
                 proposal.getDistanceMeters(),
                 proposal.getScore(),
                 proposal.getAiRationale(),
+                proposal.getNgoRequestId(),
                 proposal.getStatus().name(),
                 proposal.getCreatedAt());
     }

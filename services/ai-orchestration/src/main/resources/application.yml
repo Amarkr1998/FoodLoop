@@ -57,6 +57,17 @@ foodloop:
       base-url: ${TENANT_SERVICE_URI:http://localhost:8083}
     notification:
       base-url: ${NOTIFICATION_SERVICE_URI:http://localhost:8088}
+    ngo:
+      base-url: ${NGO_SERVICE_URI:http://localhost:8090}
+  ngo-coordination:
+    # NgoCoordinationScheduler's sweep cadence and lookahead window (spec
+    # §19's "scheduled sweep for open requests nearing needed_before"), plus
+    # the deterministic candidate-search radius and the human-approval
+    # quantity threshold (spec §26). All configurable per environment.
+    sweep-interval-ms: ${NGO_COORDINATION_SWEEP_INTERVAL_MS:300000}
+    lookahead-hours: ${NGO_COORDINATION_LOOKAHEAD_HOURS:72}
+    search-radius-km: ${NGO_COORDINATION_SEARCH_RADIUS_KM:15}
+    escalation-quantity-threshold: ${NGO_COORDINATION_ESCALATION_QUANTITY_THRESHOLD:50}
   rescue:
     # RescueScheduler's sweep cadence and the two expiry checkpoints (spec
     # §18's "e.g., T-4h, T-1h"), plus the deterministic candidate-search

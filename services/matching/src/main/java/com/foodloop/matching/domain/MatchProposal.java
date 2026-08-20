@@ -64,6 +64,10 @@ public class MatchProposal {
     @Column(name = "ai_rationale")
     private String aiRationale;
 
+    /** Non-null only when this proposal fulfills an open NGO bulk request (NGO Coordination Agent) — see NgoRequest in services/ngo. */
+    @Column(name = "ngo_request_id")
+    private UUID ngoRequestId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MatchStatus status = MatchStatus.PROPOSED;
@@ -78,13 +82,14 @@ public class MatchProposal {
 
     public MatchProposal(
             UUID tenantId, UUID foodListingId, UUID receiverOrgId,
-            BigDecimal distanceMeters, BigDecimal score, String aiRationale) {
+            BigDecimal distanceMeters, BigDecimal score, String aiRationale, UUID ngoRequestId) {
         this.tenantId = tenantId;
         this.foodListingId = foodListingId;
         this.receiverOrgId = receiverOrgId;
         this.distanceMeters = distanceMeters;
         this.score = score;
         this.aiRationale = aiRationale;
+        this.ngoRequestId = ngoRequestId;
     }
 
     public void transitionTo(MatchStatus target) {
@@ -121,6 +126,10 @@ public class MatchProposal {
 
     public String getAiRationale() {
         return aiRationale;
+    }
+
+    public UUID getNgoRequestId() {
+        return ngoRequestId;
     }
 
     public MatchStatus getStatus() {

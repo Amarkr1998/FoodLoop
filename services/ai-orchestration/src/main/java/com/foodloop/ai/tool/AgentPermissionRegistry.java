@@ -39,9 +39,21 @@ public class AgentPermissionRegistry {
             // uses, not a separate tool call — see MatchingAgent's precedent.
             Map.entry("rescue", Set.of(
                     "getFoodListing", "searchNearbyReceivers", "sendNotification", "createMatchProposal")),
+            // checkFoodEligibility/schedulePickup (also named in §5's table) aren't
+            // separate tools: eligibility folds into the agent's own deterministic
+            // candidate selection plus createMatchProposal's server-side
+            // re-validation (same "matching" row precedent above); "schedulePickup"
+            // is realized as the same createMatchProposal call NgoCoordinationAgent
+            // already uses for the non-escalated path — see NgoCoordinationAgent's
+            // Javadoc for why a distinct claim-on-behalf-of-the-NGO tool was
+            // deliberately not built (it would require impersonating the NGO's own
+            // user identity, a trust boundary this phase doesn't cross). getNGORequest
+            // and getOrganization aren't in §5's table either but fill the same
+            // "re-fetch the trigger's referenced entity before acting on it" role
+            // getFoodListing plays for Food Intelligence/Matching/Rescue — see each
+            // tool's own Javadoc.
             Map.entry("ngo-coordination", Set.of(
-                    "getNGORequirements", "searchNearbyFood", "checkFoodEligibility",
-                    "createMatchProposal", "schedulePickup")),
+                    "getNGORequest", "getNGORequirements", "getOrganization", "searchNearbyFood", "createMatchProposal")),
             Map.entry("pickup", Set.of(
                     "findAvailableVolunteers", "calculateRoute", "sendNotification",
                     "updateFoodStatus")),

@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: ngo
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=ngo
+    # Deliberately the unprivileged app role, not POSTGRES_USER — see
+    # infrastructure/docker/postgres/init/01-schemas-and-extensions.sql;
+    # POSTGRES_USER is a Postgres superuser and superusers bypass row-level
+    # security entirely (ADR-009).
+    username: ${POSTGRES_APP_USER:foodloop_app}
+    password: ${POSTGRES_APP_PASSWORD:foodloop_app_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: ngo
+  flyway:
+    schemas: ngo
+    default-schema: ngo
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/foodloop}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # See MatchEventPublisher (services/matching) / FoodEventPublisher
+        # (services/food) — KafkaTemplate.send() blocks (up to this long)
+        # and throws synchronously on first send if metadata can't be fetched.
+        max.block.ms: 3000
+    consumer:
+      group-id: ngo-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.foodloop.ngo.infrastructure.events
+        # Must match the token Matching's producer stamps for
+        # MatchProposedEvent (see Matching's producer config) — resolves it
+        # to this service's own copy of the class rather than Matching's,
+        # which isn't on this classpath.
+        spring.json.type.mapping: match.proposed:com.foodloop.ngo.infrastructure.events.MatchProposedEvent
+
+server:
+  port: 8090
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}/v1/traces
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"

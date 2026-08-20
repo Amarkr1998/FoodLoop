@@ -43,7 +43,7 @@ public class CreateMatchProposalTool implements AgentTool<CreateMatchProposalCom
     @Override
     public MatchProposalDto execute(CreateMatchProposalCommand input) {
         return matchingServiceClient.createProposal(
-                TenantContext.get(), input.foodListingId(), input.receiverOrgId(), input.aiRationale());
+                TenantContext.get(), input.foodListingId(), input.receiverOrgId(), input.aiRationale(), input.ngoRequestId());
     }
 
     @Override

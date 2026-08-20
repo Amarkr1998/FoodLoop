@@ -18,6 +18,7 @@
       { "name": "NGO_ADMIN", "description": "Manages an NGO organization's requests and verification" },
       { "name": "ORG_ADMIN", "description": "Manages a donor/receiver organization's members and listings" },
       { "name": "TRUST_OPS", "description": "Reviews risk cases, safety flags, and moderation actions" },
+      { "name": "NGO_OPS", "description": "Approves NGO Coordination Agent allocations above the auto-approval quantity threshold" },
       { "name": "ADMIN", "description": "Platform administrator" }
     ]
   },
