@@ -24,7 +24,18 @@ public class NotificationServiceClient {
         return restClient.post()
                 .uri("/api/v1/notifications")
                 .headers(headers -> authorize(headers, tenantId))
-                .body(new CreateNotificationPayload(recipientOrgId, channel, subject, body, sourceAgentRunId))
+                .body(new CreateNotificationPayload(recipientOrgId, null, channel, subject, body, sourceAgentRunId))
+                .retrieve()
+                .body(NotificationDto.class);
+    }
+
+    /** The Pickup Agent's sendNotification tool (spec §20) — notifying a specific volunteer, not an org. */
+    public NotificationDto queueForUser(
+            UUID tenantId, UUID recipientUserId, String channel, String subject, String body, UUID sourceAgentRunId) {
+        return restClient.post()
+                .uri("/api/v1/notifications")
+                .headers(headers -> authorize(headers, tenantId))
+                .body(new CreateNotificationPayload(null, recipientUserId, channel, subject, body, sourceAgentRunId))
                 .retrieve()
                 .body(NotificationDto.class);
     }

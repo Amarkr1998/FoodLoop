@@ -1,5 +1,7 @@
 package com.foodloop.pickup.domain;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,10 @@ import org.springframework.data.repository.query.Param;
 public interface PickupTaskRepository extends JpaRepository<PickupTask, UUID> {
 
     Optional<PickupTask> findByClaimId(UUID claimId);
+
+    /** The Pickup Agent's scheduled sweep (spec §20) — assigned tasks whose scheduled window has already passed without completing. */
+    List<PickupTask> findByTenantIdAndStatusInAndScheduledWindowEndBefore(
+            UUID tenantId, List<PickupStatus> statuses, Instant cutoff);
 
     /**
      * What a volunteer browses to find a task to claim (spec Phase 10) — no

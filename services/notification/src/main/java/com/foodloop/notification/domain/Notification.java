@@ -16,6 +16,10 @@ import org.hibernate.annotations.UuidGenerator;
  * One row per notification an agent or service asked to be sent — see the
  * module's pom.xml for why {@link #status} never leaves {@link NotificationStatus#QUEUED}
  * in this phase. Tenant-isolated via RLS (V1__create_notification.sql).
+ * Exactly one of {@link #recipientOrgId}/{@link #recipientUserId} is set
+ * (DB CHECK constraint, V2__add_recipient_user_id.sql) — the Pickup Agent
+ * (spec §20) needs to notify a specific volunteer user, not an org, which
+ * this table couldn't represent when Rescue (Phase 8) was its only writer.
  */
 @Entity
 @Table(name = "notification", schema = "notification")
@@ -29,8 +33,11 @@ public class Notification {
     @Column(name = "tenant_id", nullable = false, updatable = false)
     private UUID tenantId;
 
-    @Column(name = "recipient_org_id", nullable = false, updatable = false)
+    @Column(name = "recipient_org_id", updatable = false)
     private UUID recipientOrgId;
+
+    @Column(name = "recipient_user_id", updatable = false)
+    private UUID recipientUserId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false)
@@ -58,15 +65,28 @@ public class Notification {
         // JPA
     }
 
-    public Notification(
-            UUID tenantId, UUID recipientOrgId, NotificationChannel channel, String subject, String body,
-            UUID sourceAgentRunId) {
+    private Notification(
+            UUID tenantId, UUID recipientOrgId, UUID recipientUserId, NotificationChannel channel, String subject,
+            String body, UUID sourceAgentRunId) {
         this.tenantId = tenantId;
         this.recipientOrgId = recipientOrgId;
+        this.recipientUserId = recipientUserId;
         this.channel = channel;
         this.subject = subject;
         this.body = body;
         this.sourceAgentRunId = sourceAgentRunId;
+    }
+
+    public static Notification forOrg(
+            UUID tenantId, UUID recipientOrgId, NotificationChannel channel, String subject, String body,
+            UUID sourceAgentRunId) {
+        return new Notification(tenantId, recipientOrgId, null, channel, subject, body, sourceAgentRunId);
+    }
+
+    public static Notification forUser(
+            UUID tenantId, UUID recipientUserId, NotificationChannel channel, String subject, String body,
+            UUID sourceAgentRunId) {
+        return new Notification(tenantId, null, recipientUserId, channel, subject, body, sourceAgentRunId);
     }
 
     public UUID getId() {
@@ -79,6 +99,10 @@ public class Notification {
 
     public UUID getRecipientOrgId() {
         return recipientOrgId;
+    }
+
+    public UUID getRecipientUserId() {
+        return recipientUserId;
     }
 
     public NotificationChannel getChannel() {

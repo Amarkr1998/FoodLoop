@@ -54,8 +54,11 @@ public class AgentPermissionRegistry {
             // tool's own Javadoc.
             Map.entry("ngo-coordination", Set.of(
                     "getNGORequest", "getNGORequirements", "getOrganization", "searchNearbyFood", "createMatchProposal")),
+            // getPickupTask isn't in §5's table either but fills the same
+            // "re-fetch the trigger's referenced entity" role getFoodListing plays
+            // elsewhere — see GetPickupTaskTool's Javadoc.
             Map.entry("pickup", Set.of(
-                    "findAvailableVolunteers", "calculateRoute", "sendNotification",
+                    "getPickupTask", "findAvailableVolunteers", "calculateRoute", "sendNotification",
                     "updateFoodStatus")),
             Map.entry("trust-risk", Set.of(
                     "getUserBehaviorSignals", "getReportHistory", "createRiskCase")),

@@ -84,9 +84,21 @@ class NotificationTenantIsolationTest {
         assertThat(notificationRepository.findAll()).isEmpty();
     }
 
+    @Test
+    void queueForUserSetsRecipientUserIdNotOrgId() {
+        UUID volunteerUserId = UUID.randomUUID();
+        TenantContext.set(tenantA);
+        Notification saved = notificationService.queueForUser(
+                tenantA, volunteerUserId, NotificationChannel.PUSH, "Pickup delayed",
+                "Please update your status.", null);
+
+        assertThat(saved.getRecipientUserId()).isEqualTo(volunteerUserId);
+        assertThat(saved.getRecipientOrgId()).isNull();
+    }
+
     private Notification createAsTenant(UUID tenantId) {
         TenantContext.set(tenantId);
-        Notification saved = notificationService.queue(
+        Notification saved = notificationService.queueForOrg(
                 tenantId, UUID.randomUUID(), NotificationChannel.IN_APP, "Food expiring soon",
                 "A nearby listing is expiring soon.", null);
         TenantContext.clear();

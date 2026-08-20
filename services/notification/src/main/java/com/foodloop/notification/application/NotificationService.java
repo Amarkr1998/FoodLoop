@@ -20,10 +20,18 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification queue(
+    public Notification queueForOrg(
             UUID tenantId, UUID recipientOrgId, NotificationChannel channel, String subject, String body,
             UUID sourceAgentRunId) {
-        return notificationRepository.save(new Notification(tenantId, recipientOrgId, channel, subject, body, sourceAgentRunId));
+        return notificationRepository.save(Notification.forOrg(tenantId, recipientOrgId, channel, subject, body, sourceAgentRunId));
+    }
+
+    /** The Pickup Agent's sendNotification tool (spec §20) — notifying a specific volunteer, not an org. */
+    @Transactional
+    public Notification queueForUser(
+            UUID tenantId, UUID recipientUserId, NotificationChannel channel, String subject, String body,
+            UUID sourceAgentRunId) {
+        return notificationRepository.save(Notification.forUser(tenantId, recipientUserId, channel, subject, body, sourceAgentRunId));
     }
 
     @Transactional(readOnly = true)

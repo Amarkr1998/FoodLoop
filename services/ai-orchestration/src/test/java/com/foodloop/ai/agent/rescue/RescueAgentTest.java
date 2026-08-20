@@ -117,7 +117,7 @@ class RescueAgentTest {
                 .thenReturn(new MatchProposalDto(UUID.randomUUID(), listingId, orgId,
                         new BigDecimal("500"), new BigDecimal("0.8"), "auto", null, "PROPOSED"));
         when(notificationServiceClient.queue(eq(tenantId), eq(orgId), any(), any(), any(), any()))
-                .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, "IN_APP", "subj", "QUEUED"));
+                .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, null, "IN_APP", "subj", "QUEUED"));
 
         TenantContext.set(tenantId);
         RescueAgent.RescueResult result = rescueAgent.check(tenantId, listingId, RescueThreshold.T_MINUS_4H);
@@ -140,7 +140,7 @@ class RescueAgentTest {
                 .thenReturn(new MatchProposalDto(UUID.randomUUID(), listingId, orgId,
                         new BigDecimal("20000"), new BigDecimal("0.4"), "auto", null, "PROPOSED"));
         when(notificationServiceClient.queue(eq(tenantId), eq(orgId), any(), any(), any(), any()))
-                .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, "IN_APP", "subj", "QUEUED"));
+                .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, null, "IN_APP", "subj", "QUEUED"));
 
         TenantContext.set(tenantId);
         RescueAgent.RescueResult result = rescueAgent.check(tenantId, listingId, RescueThreshold.T_MINUS_1H);
@@ -177,7 +177,7 @@ class RescueAgentTest {
         when(matchingServiceClient.createProposal(eq(tenantId), eq(listingId), eq(orgId), any(), any()))
                 .thenThrow(new ApiException("MATCH_ALREADY_PROPOSED", HttpStatus.CONFLICT, "already open"));
         when(notificationServiceClient.queue(eq(tenantId), eq(orgId), any(), any(), any(), any()))
-                .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, "IN_APP", "subj", "QUEUED"));
+                .thenReturn(new NotificationDto(UUID.randomUUID(), orgId, null, "IN_APP", "subj", "QUEUED"));
 
         TenantContext.set(tenantId);
         RescueAgent.RescueResult result = rescueAgent.check(tenantId, listingId, RescueThreshold.T_MINUS_4H);

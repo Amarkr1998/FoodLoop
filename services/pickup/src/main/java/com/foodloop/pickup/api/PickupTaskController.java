@@ -4,6 +4,8 @@ import com.foodloop.commons.tenant.TenantContext;
 import com.foodloop.commons.web.ApiException;
 import com.foodloop.pickup.application.PickupService;
 import com.foodloop.pickup.domain.PickupTask;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 public class PickupTaskController {
+
+    /** Only this Keycloak client's service account may system-unassign — see FoodListingController's requireAiOrchestrationCaller Javadoc. */
+    private static final String AI_ORCHESTRATION_CLIENT_ID = "foodloop-ai-orchestration";
 
     private final PickupService pickupService;
 
@@ -89,6 +94,47 @@ public class PickupTaskController {
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
         return pickupService.searchAvailableForVolunteers(tenantId(authentication), lat, lng, radiusKm, pageable)
                 .map(PickupTaskResponse::from);
+    }
+
+    /** The Pickup Agent's findAvailableVolunteers tool (spec §20) — same openness level as {@link #available}. */
+    @GetMapping("/api/v1/pickups/{id}/nearby-volunteers")
+    public List<VolunteerProfileResponse> nearbyVolunteers(
+            @PathVariable UUID id, @RequestParam(defaultValue = "10") double radiusKm) {
+        return pickupService.findNearbyAvailableVolunteers(id, radiusKm, PageRequest.of(0, 20)).stream()
+                .map(VolunteerProfileResponse::from)
+                .toList();
+    }
+
+    /**
+     * The Pickup Agent's scheduled sweep (spec §20) — same {@code azp}
+     * trust restriction as Tenant's {@code GET /api/v1/tenants}: a
+     * platform-ops-shaped query, not something an end-user client calls.
+     */
+    @GetMapping("/api/v1/pickups/delayed")
+    public List<PickupTaskResponse> delayed(JwtAuthenticationToken authentication, @RequestParam Instant asOf) {
+        requireAiOrchestrationCaller(authentication);
+        return pickupService.findDelayed(tenantId(authentication), asOf).stream().map(PickupTaskResponse::from).toList();
+    }
+
+    /**
+     * Written only by the Pickup Agent's updateFoodStatus tool ("pickup
+     * substates only" per §25's permission table) — same {@code azp} trust
+     * check as Food's updateAiMetadata. See PickupService#systemUnassignVolunteer's
+     * Javadoc for why this deliberately skips the owner check {@link #unassign} enforces.
+     */
+    @PostMapping("/api/v1/pickups/{id}/system-unassign")
+    public PickupTaskResponse systemUnassign(JwtAuthenticationToken authentication, @PathVariable UUID id) {
+        requireAiOrchestrationCaller(authentication);
+        return PickupTaskResponse.from(pickupService.systemUnassignVolunteer(id));
+    }
+
+    // Package-private (not private) so a dedicated authorization test can exercise this directly.
+    void requireAiOrchestrationCaller(JwtAuthenticationToken authentication) {
+        String azp = authentication.getToken().getClaimAsString("azp");
+        if (!AI_ORCHESTRATION_CLIENT_ID.equals(azp)) {
+            throw new ApiException("FORBIDDEN_PICKUP_AGENT_ACTION", HttpStatus.FORBIDDEN,
+                    "Only the AI orchestration service may perform this action.");
+        }
     }
 
     private UUID callerUserId(JwtAuthenticationToken authentication) {

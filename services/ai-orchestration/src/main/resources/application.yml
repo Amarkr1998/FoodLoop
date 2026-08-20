@@ -61,6 +61,15 @@ foodloop:
       base-url: ${NGO_SERVICE_URI:http://localhost:8090}
     trust:
       base-url: ${TRUST_SERVICE_URI:http://localhost:8091}
+    pickup:
+      base-url: ${PICKUP_SERVICE_URI:http://localhost:8085}
+  pickup:
+    # PickupScheduler's sweep cadence, plus the deterministic candidate-search
+    # radius and notify-top-N (spec §20). All configurable per environment,
+    # same precedent as RescueScheduler's own properties.
+    sweep-interval-ms: ${PICKUP_SWEEP_INTERVAL_MS:300000}
+    search-radius-km: ${PICKUP_SEARCH_RADIUS_KM:10}
+    notify-top-n: ${PICKUP_NOTIFY_TOP_N:3}
   ngo-coordination:
     # NgoCoordinationScheduler's sweep cadence and lookahead window (spec
     # §19's "scheduled sweep for open requests nearing needed_before"), plus

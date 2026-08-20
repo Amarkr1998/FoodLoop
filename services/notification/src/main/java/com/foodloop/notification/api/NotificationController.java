@@ -26,9 +26,19 @@ public class NotificationController {
 
     @PostMapping("/api/v1/notifications")
     public ResponseEntity<NotificationResponse> create(@Valid @RequestBody CreateNotificationRequest request) {
-        var notification = notificationService.queue(
-                currentTenantId(), request.recipientOrgId(), request.channel(), request.subject(), request.body(),
-                request.sourceAgentRunId());
+        boolean hasOrg = request.recipientOrgId() != null;
+        boolean hasUser = request.recipientUserId() != null;
+        if (hasOrg == hasUser) {
+            throw new ApiException("INVALID_RECIPIENT", HttpStatus.BAD_REQUEST,
+                    "Exactly one of recipientOrgId or recipientUserId must be set.");
+        }
+        var notification = hasUser
+                ? notificationService.queueForUser(
+                        currentTenantId(), request.recipientUserId(), request.channel(), request.subject(), request.body(),
+                        request.sourceAgentRunId())
+                : notificationService.queueForOrg(
+                        currentTenantId(), request.recipientOrgId(), request.channel(), request.subject(), request.body(),
+                        request.sourceAgentRunId());
         return ResponseEntity.status(HttpStatus.CREATED).body(NotificationResponse.from(notification));
     }
 

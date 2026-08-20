@@ -3,11 +3,15 @@ package com.foodloop.pickup.application;
 import com.foodloop.commons.tenant.TenantContext;
 import com.foodloop.commons.web.ApiException;
 import com.foodloop.pickup.domain.GeoUtils;
+import com.foodloop.pickup.domain.PickupStatus;
 import com.foodloop.pickup.domain.PickupTask;
 import com.foodloop.pickup.domain.PickupTaskRepository;
 import com.foodloop.pickup.domain.VolunteerProfile;
+import com.foodloop.pickup.domain.VolunteerProfileRepository;
 import com.foodloop.pickup.infrastructure.events.FoodClaimedEvent;
 import com.foodloop.pickup.infrastructure.events.PickupEventPublisher;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +29,15 @@ public class PickupService {
     private final PickupTaskRepository pickupTaskRepository;
     private final PickupEventPublisher eventPublisher;
     private final VolunteerService volunteerService;
+    private final VolunteerProfileRepository volunteerProfileRepository;
 
     public PickupService(
-            PickupTaskRepository pickupTaskRepository, PickupEventPublisher eventPublisher, VolunteerService volunteerService) {
+            PickupTaskRepository pickupTaskRepository, PickupEventPublisher eventPublisher, VolunteerService volunteerService,
+            VolunteerProfileRepository volunteerProfileRepository) {
         this.pickupTaskRepository = pickupTaskRepository;
         this.eventPublisher = eventPublisher;
         this.volunteerService = volunteerService;
+        this.volunteerProfileRepository = volunteerProfileRepository;
     }
 
     /**
@@ -131,6 +138,38 @@ public class PickupService {
     @Transactional(readOnly = true)
     public Page<PickupTask> searchAvailableForVolunteers(UUID tenantId, double lat, double lng, double radiusKm, Pageable pageable) {
         return pickupTaskRepository.searchNearbyUnassigned(tenantId, lat, lng, radiusKm * 1000.0, pageable);
+    }
+
+    /** The Pickup Agent's findAvailableVolunteers tool (spec §20) — centered on the task's own pickup location. */
+    @Transactional(readOnly = true)
+    public Page<VolunteerProfile> findNearbyAvailableVolunteers(UUID taskId, double radiusKm, Pageable pageable) {
+        PickupTask task = get(taskId);
+        return volunteerProfileRepository.searchNearbyAvailable(
+                task.getTenantId(), task.getPickupLocation().getY(), task.getPickupLocation().getX(),
+                radiusKm * 1000.0, pageable);
+    }
+
+    /** The Pickup Agent's scheduled sweep (spec §20) — assigned tasks past their scheduled window, still not ARRIVED/COMPLETED. */
+    @Transactional(readOnly = true)
+    public List<PickupTask> findDelayed(UUID tenantId, Instant cutoff) {
+        return pickupTaskRepository.findByTenantIdAndStatusInAndScheduledWindowEndBefore(
+                tenantId, List.of(PickupStatus.ASSIGNED, PickupStatus.EN_ROUTE), cutoff);
+    }
+
+    /**
+     * The Pickup Agent's system-initiated reassignment action (spec §20:
+     * "whether to recommend reassignment") — deliberately skips the
+     * owner/volunteer check {@link #unassignVolunteer} enforces: the whole
+     * point is freeing a task from a volunteer who has gone unresponsive,
+     * so requiring that same volunteer's authorization would defeat it.
+     * Reversible and low-risk (the task just returns to the open pool for
+     * another volunteer to claim), unlike an escalation-gated action.
+     */
+    @Transactional
+    public PickupTask systemUnassignVolunteer(UUID id) {
+        PickupTask task = get(id);
+        task.unassignVolunteer();
+        return pickupTaskRepository.save(task);
     }
 
     private PickupTask getOwnedByDonorOrReceiver(UUID id, UUID callerUserId) {
