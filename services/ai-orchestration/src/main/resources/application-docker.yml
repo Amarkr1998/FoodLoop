@@ -6,3 +6,10 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://keycloak:8080/realms/foodloop
+
+foodloop:
+  services:
+    food:
+      base-url: http://food:8084
+  service-account:
+    token-uri: http://keycloak:8080/realms/foodloop/protocol/openid-connect/token

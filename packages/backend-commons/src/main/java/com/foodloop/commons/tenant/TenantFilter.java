@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,36 +29,64 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * A request whose JWT carries no {@code tenant_id} claim proceeds with no
  * tenant set — RLS policies then return zero rows rather than leaking data,
  * so a missing claim fails closed, not open.
+ *
+ * <p>One exception: {@code foodloop-ai-orchestration}'s service-account JWT
+ * has no {@code tenant_id} attribute of its own — a single client-credentials
+ * principal acts on behalf of whichever tenant triggered a given agent run,
+ * so it cannot have one fixed tenant baked into the token
+ * (docs/architecture/05-ai-agent-architecture.md §1: agents call business
+ * APIs through the same authenticated boundary a normal client would use).
+ * For that one trusted client only — identified by the JWT's own signed
+ * {@code azp} claim, never by anything the caller can freely set — an
+ * explicit {@value #TENANT_HEADER} header supplies the tenant instead. No
+ * other client is granted this, so an ordinary donor/receiver JWT (issued to
+ * {@code foodloop-web}/{@code foodloop-mobile}) can never use the header to
+ * impersonate a different tenant.
  */
 public class TenantFilter extends OncePerRequestFilter {
 
     static final String TENANT_CLAIM = "tenant_id";
+    static final String TENANT_HEADER = "X-Tenant-Id";
+    static final String AZP_CLAIM = "azp";
+    static final Set<String> DELEGATED_TENANT_HEADER_CLIENTS = Set.of("foodloop-ai-orchestration");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
-            resolveTenantId().ifPresent(TenantContext::set);
+            resolveTenantId(request).ifPresent(TenantContext::set);
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
         }
     }
 
-    private java.util.Optional<UUID> resolveTenantId() {
+    private Optional<UUID> resolveTenantId(HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
         Jwt jwt = jwtAuth.getToken();
-        String tenantClaim = jwt.getClaimAsString(TENANT_CLAIM);
-        if (tenantClaim == null || tenantClaim.isBlank()) {
-            return java.util.Optional.empty();
+
+        Optional<UUID> claimTenant = parseUuid(jwt.getClaimAsString(TENANT_CLAIM));
+        if (claimTenant.isPresent()) {
+            return claimTenant;
+        }
+
+        if (DELEGATED_TENANT_HEADER_CLIENTS.contains(jwt.getClaimAsString(AZP_CLAIM))) {
+            return parseUuid(request.getHeader(TENANT_HEADER));
+        }
+        return Optional.empty();
+    }
+
+    private Optional<UUID> parseUuid(String value) {
+        if (value == null || value.isBlank()) {
+            return Optional.empty();
         }
         try {
-            return java.util.Optional.of(UUID.fromString(tenantClaim));
+            return Optional.of(UUID.fromString(value));
         } catch (IllegalArgumentException e) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
     }
 }

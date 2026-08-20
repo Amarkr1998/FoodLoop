@@ -47,6 +47,21 @@ spring:
           options:
             deployment-name: ${AZURE_OPENAI_CHAT_DEPLOYMENT:gpt-4o}
 
+foodloop:
+  services:
+    food:
+      base-url: ${FOOD_SERVICE_URI:http://localhost:8084}
+  service-account:
+    # This service's own Keycloak client-credentials identity (see
+    # infrastructure/docker/keycloak/foodloop-realm.json's
+    # foodloop-ai-orchestration client) — used to call other bounded-context
+    # services' APIs as a scoped, audited tool call
+    # (docs/architecture/05-ai-agent-architecture.md §1), never with a
+    # donor/receiver's own token.
+    client-id: foodloop-ai-orchestration
+    client-secret: ${KEYCLOAK_AI_ORCHESTRATION_CLIENT_SECRET:dev-only-ai-orch-secret-change-me}
+    token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8081/realms/foodloop/protocol/openid-connect/token}
+
 server:
   port: 8086
 

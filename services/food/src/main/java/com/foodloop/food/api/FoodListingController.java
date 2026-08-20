@@ -4,8 +4,10 @@ import com.foodloop.commons.web.ApiException;
 import com.foodloop.food.application.ClaimService;
 import com.foodloop.food.application.FoodListingService;
 import com.foodloop.food.domain.Claim;
+import com.foodloop.food.domain.FoodAiMetadata;
 import com.foodloop.food.domain.FoodListing;
 import jakarta.validation.Valid;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,6 +18,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,6 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class FoodListingController {
+
+    /** Only this Keycloak client's service account may write AI metadata — see TenantFilter's Javadoc. */
+    private static final String AI_ORCHESTRATION_CLIENT_ID = "foodloop-ai-orchestration";
 
     private final FoodListingService foodListingService;
     private final ClaimService claimService;
@@ -42,6 +48,24 @@ public class FoodListingController {
     @PostMapping("/api/v1/food-listings/{id}/publish")
     public FoodListingResponse publish(JwtAuthenticationToken authentication, @PathVariable UUID id) {
         return FoodListingResponse.from(foodListingService.publish(id, callerUserId(authentication)));
+    }
+
+    /**
+     * Written only by the AI orchestration service's updateFoodListingAiMetadata
+     * tool, never by a donor directly — enforced by checking the JWT's own
+     * signed {@code azp} claim, the same trust primitive
+     * {@link com.foodloop.commons.tenant.TenantFilter} uses for the delegated
+     * tenant header this same caller relies on to reach this endpoint at all.
+     */
+    @PutMapping("/api/v1/food-listings/{id}/ai-metadata")
+    public FoodListingResponse updateAiMetadata(
+            JwtAuthenticationToken authentication, @PathVariable UUID id, @Valid @RequestBody UpdateAiMetadataRequest request) {
+        requireAiOrchestrationCaller(authentication);
+        FoodAiMetadata metadata = new FoodAiMetadata(
+                request.category(), request.dietaryTypes(), request.allergens(), request.estimatedServings(),
+                request.urgency(), request.missingInformation(), request.suggestedDescription(), request.confidence(),
+                Instant.now());
+        return FoodListingResponse.from(foodListingService.applyAiMetadata(id, metadata));
     }
 
     @PostMapping("/api/v1/food-listings/{id}/cancel")
@@ -83,6 +107,16 @@ public class FoodListingController {
         UUID receiverOrgId = request != null ? request.receiverOrgId() : null;
         Claim claim = claimService.claim(id, callerUserId(authentication), receiverOrgId, idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(ClaimResponse.from(claim));
+    }
+
+    // Package-private (not private) so FoodListingControllerAiMetadataAuthorizationTest
+    // can exercise this security-critical check directly.
+    void requireAiOrchestrationCaller(JwtAuthenticationToken authentication) {
+        String azp = authentication.getToken().getClaimAsString("azp");
+        if (!AI_ORCHESTRATION_CLIENT_ID.equals(azp)) {
+            throw new ApiException("FORBIDDEN_AI_METADATA_WRITE", HttpStatus.FORBIDDEN,
+                    "Only the AI orchestration service may write AI metadata.");
+        }
     }
 
     private UUID callerUserId(JwtAuthenticationToken authentication) {

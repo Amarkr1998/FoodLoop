@@ -1,5 +1,6 @@
 package com.foodloop.food.api;
 
+import com.foodloop.food.domain.FoodAiMetadata;
 import com.foodloop.food.domain.FoodListing;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -25,7 +26,31 @@ public record FoodListingResponse(
         double longitude,
         String status,
         String verificationStatus,
+        AiMetadataView aiMetadata,
         Instant createdAt) {
+
+    /** Null until the Food Intelligence Agent has analyzed this listing (spec §16) — advisory, never authoritative. */
+    public record AiMetadataView(
+            String category,
+            List<String> dietaryTypes,
+            List<String> allergens,
+            Integer estimatedServings,
+            String urgency,
+            List<String> missingInformation,
+            String suggestedDescription,
+            Double confidence,
+            Instant analyzedAt) {
+
+        static AiMetadataView from(FoodAiMetadata metadata) {
+            if (metadata == null) {
+                return null;
+            }
+            return new AiMetadataView(
+                    metadata.category(), metadata.dietaryTypes(), metadata.allergens(), metadata.estimatedServings(),
+                    metadata.urgency(), metadata.missingInformation(), metadata.suggestedDescription(),
+                    metadata.confidence(), metadata.analyzedAt());
+        }
+    }
 
     public static FoodListingResponse from(FoodListing listing) {
         return new FoodListingResponse(
@@ -47,6 +72,7 @@ public record FoodListingResponse(
                 listing.getLocation().getX(),
                 listing.getStatus().name(),
                 listing.getVerificationStatus().name(),
+                AiMetadataView.from(listing.getAiMetadata()),
                 listing.getCreatedAt());
     }
 
@@ -71,6 +97,7 @@ public record FoodListingResponse(
                 listing.getApproxLocation().getX(),
                 listing.getStatus().name(),
                 listing.getVerificationStatus().name(),
+                AiMetadataView.from(listing.getAiMetadata()),
                 listing.getCreatedAt());
     }
 }

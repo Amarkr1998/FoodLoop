@@ -3,6 +3,7 @@ package com.foodloop.food.application;
 import com.foodloop.commons.tenant.TenantContext;
 import com.foodloop.commons.web.ApiException;
 import com.foodloop.food.api.CreateFoodListingRequest;
+import com.foodloop.food.domain.FoodAiMetadata;
 import com.foodloop.food.domain.FoodListing;
 import com.foodloop.food.domain.FoodListingRepository;
 import com.foodloop.food.domain.FoodStatus;
@@ -59,6 +60,20 @@ public class FoodListingService {
         FoodListing saved = foodListingRepository.save(listing);
         eventPublisher.publishFoodListed(saved);
         return saved;
+    }
+
+    /**
+     * Called only by the AI orchestration service's updateFoodListingAiMetadata
+     * tool (a trusted service account, not a donor — see FoodListingController
+     * and TenantFilter's delegated-tenant-header Javadoc), so there is no
+     * ownership check here; tenant isolation (RLS) is still fully enforced via
+     * the same {@link TenantContext} every other method relies on.
+     */
+    @Transactional
+    public FoodListing applyAiMetadata(UUID id, FoodAiMetadata metadata) {
+        FoodListing listing = get(id);
+        listing.recordAiMetadata(metadata);
+        return foodListingRepository.save(listing);
     }
 
     @Transactional

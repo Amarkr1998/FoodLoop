@@ -100,6 +100,10 @@ public class FoodListing {
     @Column(name = "verification_status", nullable = false)
     private FoodVerificationStatus verificationStatus = FoodVerificationStatus.UNVERIFIED;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "ai_metadata")
+    private FoodAiMetadata aiMetadata;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -152,6 +156,28 @@ public class FoodListing {
                     "Cannot transition food listing from " + status + " to " + target + ".");
         }
         this.status = target;
+    }
+
+    /**
+     * Records the Food Intelligence Agent's suggestions (spec §16) — advisory
+     * only, the donor's own fields above are never overwritten by this.
+     * Restricted to DRAFT: the only trigger this phase implements is the
+     * donor-initiated synchronous analyze call
+     * (docs/architecture/05-ai-agent-architecture.md §3), not the
+     * event-driven background quality pass on already-published listings —
+     * that's future work, not a limitation baked into the data model.
+     */
+    public void recordAiMetadata(FoodAiMetadata metadata) {
+        if (status != FoodStatus.DRAFT) {
+            throw new ApiException("LISTING_NOT_DRAFT", HttpStatus.CONFLICT,
+                    "AI analysis can only be recorded while a listing is in DRAFT (current status: " + status + ").");
+        }
+        this.aiMetadata = metadata;
+        this.verificationStatus = FoodVerificationStatus.AI_REVIEWED;
+    }
+
+    public FoodAiMetadata getAiMetadata() {
+        return aiMetadata;
     }
 
     public UUID getId() {
