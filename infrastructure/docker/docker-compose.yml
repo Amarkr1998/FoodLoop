@@ -239,6 +239,38 @@ services:
       retries: 15
       start_period: 40s
 
+  ai-orchestration:
+    build:
+      context: ../..
+      dockerfile: services/ai-orchestration/Dockerfile
+    container_name: foodloop-ai-orchestration
+    <<: *default-env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # `:-` (unset-OR-empty), not `:` (unset-only): .env.example ships
+      # these as present-but-empty, and Spring's own `${VAR:default}`
+      # placeholder syntax only falls back when a property is absent, not
+      # when it resolves to "" — so an empty env var here would otherwise
+      # reach AzureOpenAiClientBuilderConfiguration as an empty endpoint
+      # string and crash bean creation at startup (Assert.hasText). Compose
+      # resolves this substitution before the container ever sees these
+      # vars, so the container's env is never blank.
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-https://not-configured.invalid/}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-not-configured}
+    ports:
+      - "8086:8086"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+
   api-gateway:
     build:
       context: ../..
@@ -262,6 +294,8 @@ services:
       food:
         condition: service_healthy
       pickup:
+        condition: service_healthy
+      ai-orchestration:
         condition: service_healthy
 
 volumes:

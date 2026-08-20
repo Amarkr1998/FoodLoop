@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: ai-orchestration
+  datasource:
+    # No PostGIS types are used in the ai schema, but ",public" is kept for
+    # consistency with every other service's currentSchema config — see
+    # services/food's application.yml for the failure mode this avoids.
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=ai,public
+    # Deliberately the unprivileged app role, not POSTGRES_USER — see
+    # infrastructure/docker/postgres/init/01-schemas-and-extensions.sql;
+    # POSTGRES_USER is a Postgres superuser and superusers bypass row-level
+    # security entirely (ADR-009).
+    username: ${POSTGRES_APP_USER:foodloop_app}
+    password: ${POSTGRES_APP_PASSWORD:foodloop_app_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: ai
+  flyway:
+    schemas: ai
+    default-schema: ai
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/foodloop}
+  ai:
+    azure:
+      openai:
+        # Placeholder defaults, not blank: Spring AI's OpenAiClientBuilder
+        # bean is built eagerly at context-refresh time regardless of
+        # whether anything ever calls it, and throws if the endpoint is
+        # empty. AzureOpenAiChatModelProvider.isAvailable() reads the raw
+        # AZURE_OPENAI_* env vars directly (genuinely blank when unset) to
+        # decide whether to actually use this bean, so the provider chain
+        # still correctly degrades to MockChatModelProvider in local dev
+        # (AI_PROVIDER_MODE=mock in .env.example) — these placeholders exist
+        # only to keep bean construction from crashing, never to make the
+        # provider look configured.
+        api-key: ${AZURE_OPENAI_API_KEY:not-configured}
+        endpoint: ${AZURE_OPENAI_ENDPOINT:https://not-configured.invalid/}
+        chat:
+          options:
+            deployment-name: ${AZURE_OPENAI_CHAT_DEPLOYMENT:gpt-4o}
+
+server:
+  port: 8086
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}/v1/traces
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
