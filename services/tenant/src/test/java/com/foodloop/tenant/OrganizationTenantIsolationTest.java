@@ -34,8 +34,8 @@ import org.testcontainers.utility.DockerImageName;
 class OrganizationTenantIsolationTest {
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"));
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
+            DockerImageName.parse("postgis/postgis:16-3.4").asCompatibleSubstituteFor("postgres"));
 
     @BeforeAll
     static void createUnprivilegedAppRole() throws Exception {

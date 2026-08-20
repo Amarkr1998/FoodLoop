@@ -30,16 +30,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * tenant set — RLS policies then return zero rows rather than leaking data,
  * so a missing claim fails closed, not open.
  *
- * <p>One exception: {@code foodloop-ai-orchestration}'s service-account JWT
- * has no {@code tenant_id} attribute of its own — a single client-credentials
- * principal acts on behalf of whichever tenant triggered a given agent run,
- * so it cannot have one fixed tenant baked into the token
- * (docs/architecture/05-ai-agent-architecture.md §1: agents call business
- * APIs through the same authenticated boundary a normal client would use).
- * For that one trusted client only — identified by the JWT's own signed
- * {@code azp} claim, never by anything the caller can freely set — an
- * explicit {@value #TENANT_HEADER} header supplies the tenant instead. No
- * other client is granted this, so an ordinary donor/receiver JWT (issued to
+ * <p>One exception: a service-to-service client-credentials principal (e.g.
+ * {@code foodloop-ai-orchestration}, {@code foodloop-matching}) has no
+ * {@code tenant_id} attribute of its own — a single such principal acts on
+ * behalf of whichever tenant triggered the call, so it cannot have one fixed
+ * tenant baked into the token (docs/architecture/05-ai-agent-architecture.md
+ * §1: agents/services call business APIs through the same authenticated
+ * boundary a normal client would use). For these trusted clients only —
+ * identified by the JWT's own signed {@code azp} claim, never by anything
+ * the caller can freely set — an explicit {@value #TENANT_HEADER} header
+ * supplies the tenant instead. No other client is granted this, so an
+ * ordinary donor/receiver JWT (issued to
  * {@code foodloop-web}/{@code foodloop-mobile}) can never use the header to
  * impersonate a different tenant.
  */
@@ -48,7 +49,7 @@ public class TenantFilter extends OncePerRequestFilter {
     static final String TENANT_CLAIM = "tenant_id";
     static final String TENANT_HEADER = "X-Tenant-Id";
     static final String AZP_CLAIM = "azp";
-    static final Set<String> DELEGATED_TENANT_HEADER_CLIENTS = Set.of("foodloop-ai-orchestration");
+    static final Set<String> DELEGATED_TENANT_HEADER_CLIENTS = Set.of("foodloop-ai-orchestration", "foodloop-matching");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

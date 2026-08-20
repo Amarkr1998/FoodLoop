@@ -11,5 +11,7 @@ foodloop:
   services:
     food:
       base-url: http://food:8084
+    matching:
+      base-url: http://matching:8087
   service-account:
     token-uri: http://keycloak:8080/realms/foodloop/protocol/openid-connect/token

@@ -51,6 +51,8 @@ foodloop:
   services:
     food:
       base-url: ${FOOD_SERVICE_URI:http://localhost:8084}
+    matching:
+      base-url: ${MATCHING_SERVICE_URI:http://localhost:8087}
   service-account:
     # This service's own Keycloak client-credentials identity (see
     # infrastructure/docker/keycloak/foodloop-realm.json's

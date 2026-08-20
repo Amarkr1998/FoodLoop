@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/foodloop?currentSchema=matching
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/foodloop
+  kafka:
+    bootstrap-servers: kafka:9092
+
+foodloop:
+  services:
+    food:
+      base-url: http://food:8084
+    tenant:
+      base-url: http://tenant:8083
+  service-account:
+    token-uri: http://keycloak:8080/realms/foodloop/protocol/openid-connect/token

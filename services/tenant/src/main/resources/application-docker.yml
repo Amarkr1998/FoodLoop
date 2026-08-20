@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/foodloop?currentSchema=tenant
+    url: jdbc:postgresql://postgres:5432/foodloop?currentSchema=tenant,public
   security:
     oauth2:
       resourceserver:

@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: matching
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=matching
+    # Deliberately the unprivileged app role, not POSTGRES_USER — see
+    # infrastructure/docker/postgres/init/01-schemas-and-extensions.sql;
+    # POSTGRES_USER is a Postgres superuser and superusers bypass row-level
+    # security entirely (ADR-009).
+    username: ${POSTGRES_APP_USER:foodloop_app}
+    password: ${POSTGRES_APP_PASSWORD:foodloop_app_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: matching
+  flyway:
+    schemas: matching
+    default-schema: matching
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/foodloop}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # See MatchEventPublisher / services/food's FoodEventPublisher —
+        # KafkaTemplate.send() blocks (up to this long) and throws
+        # synchronously on first send if metadata can't be fetched.
+        max.block.ms: 3000
+
+foodloop:
+  services:
+    food:
+      base-url: ${FOOD_SERVICE_URI:http://localhost:8084}
+    tenant:
+      base-url: ${TENANT_SERVICE_URI:http://localhost:8083}
+  service-account:
+    # This service's own Keycloak client-credentials identity (see
+    # infrastructure/docker/keycloak/foodloop-realm.json's foodloop-matching
+    # client) — used to call Food/Tenant as a scoped, re-validated call
+    # (docs/architecture/05-ai-agent-architecture.md §1), never with the
+    # inbound caller's own token.
+    client-id: foodloop-matching
+    client-secret: ${KEYCLOAK_MATCHING_CLIENT_SECRET:dev-only-matching-secret-change-me}
+    token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8081/realms/foodloop/protocol/openid-connect/token}
+
+server:
+  port: 8087
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}/v1/traces
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"

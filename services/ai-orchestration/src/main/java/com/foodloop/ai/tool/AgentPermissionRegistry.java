@@ -23,9 +23,16 @@ public class AgentPermissionRegistry {
     private static final Map<String, Set<String>> PERMITTED_TOOLS = Map.ofEntries(
             Map.entry("food-intelligence", Set.of(
                     "getFoodListing", "classifyFoodImage", "updateFoodListingAiMetadata")),
+            // docs/architecture/05 §5's table lists searchNearbyFood/searchNearbyNGOs/
+            // getNGORequirements/checkFoodEligibility/calculateDistance for Matching,
+            // written before Phase 7 scoping decided the NGO-request domain (Phase 8)
+            // wasn't available yet — see FoodIntelligenceAgent's classifyFoodImage
+            // precedent for the same "don't build a tool with nothing real behind it"
+            // rule. checkFoodEligibility/calculateDistance fold into the deterministic
+            // MatchingEngine inside createMatchProposal's server-side re-validation
+            // instead of being separate agent-visible tool calls.
             Map.entry("matching", Set.of(
-                    "searchNearbyFood", "searchNearbyNGOs", "getNGORequirements",
-                    "checkFoodEligibility", "calculateDistance", "createMatchProposal")),
+                    "getFoodListing", "searchNearbyReceivers", "createMatchProposal")),
             Map.entry("rescue", Set.of(
                     "getFoodListing", "searchNearbyFood", "searchNearbyNGOs",
                     "sendNotification", "createMatchProposal", "createSafetyCase")),

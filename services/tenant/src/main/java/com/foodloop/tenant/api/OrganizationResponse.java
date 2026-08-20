@@ -10,6 +10,8 @@ public record OrganizationResponse(
         String name,
         String type,
         String verificationStatus,
+        Double latitude,
+        Double longitude,
         Instant createdAt) {
 
     public static OrganizationResponse from(Organization organization) {
@@ -19,6 +21,8 @@ public record OrganizationResponse(
                 organization.getName(),
                 organization.getType().name(),
                 organization.getVerificationStatus().name(),
+                organization.getLocation() != null ? organization.getLocation().getY() : null,
+                organization.getLocation() != null ? organization.getLocation().getX() : null,
                 organization.getCreatedAt());
     }
 }

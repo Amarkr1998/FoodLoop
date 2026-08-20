@@ -2,7 +2,11 @@ spring:
   application:
     name: tenant
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=tenant
+    # "tenant,public" — currentSchema replaces the whole search_path rather
+    # than prepending to it; PostGIS's geography type (installed in public)
+    # needs to stay resolvable now that organization.location uses it. See
+    # services/food's application.yml for the failure mode this avoids.
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=tenant,public
     # Deliberately the unprivileged app role, not POSTGRES_USER — see
     # infrastructure/docker/postgres/init/01-schemas-and-extensions.sql;
     # POSTGRES_USER is a Postgres superuser and superusers bypass row-level

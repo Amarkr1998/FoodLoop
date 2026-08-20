@@ -1,6 +1,7 @@
 package com.foodloop.tenant.application;
 
 import com.foodloop.commons.web.ApiException;
+import com.foodloop.tenant.domain.GeoUtils;
 import com.foodloop.tenant.domain.OrgMember;
 import com.foodloop.tenant.domain.OrgMemberRepository;
 import com.foodloop.tenant.domain.OrgMemberRole;
@@ -8,8 +9,11 @@ import com.foodloop.tenant.domain.Organization;
 import com.foodloop.tenant.domain.OrganizationRepository;
 import com.foodloop.tenant.domain.OrganizationType;
 import com.foodloop.tenant.infrastructure.events.OrganizationEventPublisher;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,8 +42,13 @@ public class OrganizationService {
     }
 
     @Transactional
-    public Organization createOrganization(UUID tenantId, UUID callerUserId, String name, OrganizationType type) {
-        Organization organization = organizationRepository.save(new Organization(tenantId, name, type));
+    public Organization createOrganization(
+            UUID tenantId, UUID callerUserId, String name, OrganizationType type, BigDecimal latitude, BigDecimal longitude) {
+        Organization organization = new Organization(tenantId, name, type);
+        if (latitude != null && longitude != null) {
+            organization.updateLocation(GeoUtils.point(latitude.doubleValue(), longitude.doubleValue()));
+        }
+        organization = organizationRepository.save(organization);
         orgMemberRepository.save(new OrgMember(tenantId, organization.getId(), callerUserId, OrgMemberRole.ORG_ADMIN));
         eventPublisher.publishOrganizationCreated(organization);
         return organization;
@@ -52,11 +61,28 @@ public class OrganizationService {
     }
 
     @Transactional
-    public Organization renameOrganization(UUID organizationId, UUID callerUserId, String newName) {
+    public Organization updateOrganization(
+            UUID organizationId, UUID callerUserId, String newName, BigDecimal latitude, BigDecimal longitude) {
         requireAdmin(organizationId, callerUserId);
         Organization organization = getOrganization(organizationId);
         organization.rename(newName);
+        if (latitude != null && longitude != null) {
+            organization.updateLocation(GeoUtils.point(latitude.doubleValue(), longitude.doubleValue()));
+        }
         return organizationRepository.save(organization);
+    }
+
+    /**
+     * Matching Agent's nearby-receiver search (Phase 7, docs/architecture/05
+     * §3): only orgs that opted in by setting a location are candidates —
+     * donor org types are excluded structurally by
+     * {@link OrganizationRepository#searchNearbyReceivers}, not filtered
+     * here, so a caller can't accidentally widen the query to donors.
+     */
+    @Transactional(readOnly = true)
+    public Page<Organization> searchNearbyReceivers(
+            UUID tenantId, double lat, double lng, double radiusMeters, String type, Pageable pageable) {
+        return organizationRepository.searchNearbyReceivers(tenantId, lat, lng, radiusMeters, type, pageable);
     }
 
     @Transactional

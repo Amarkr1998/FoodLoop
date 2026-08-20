@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+import org.locationtech.jts.geom.Point;
 
 /**
  * A business entity within a tenant — a restaurant, NGO, corporate donor,
@@ -43,6 +44,10 @@ public class Organization {
     @Column(name = "verification_status", nullable = false)
     private VerificationStatus verificationStatus = VerificationStatus.UNVERIFIED;
 
+    /** Set only for receiver-capable orgs that opt into location-based matching (Phase 7) — donor orgs leave this null. */
+    @Column(columnDefinition = "geography(Point,4326)")
+    private Point location;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -70,6 +75,10 @@ public class Organization {
         }
     }
 
+    public void updateLocation(Point location) {
+        this.location = location;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -88,6 +97,10 @@ public class Organization {
 
     public VerificationStatus getVerificationStatus() {
         return verificationStatus;
+    }
+
+    public Point getLocation() {
+        return location;
     }
 
     public Instant getCreatedAt() {
