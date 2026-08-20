@@ -94,6 +94,16 @@ spring:
                 redis-rate-limiter.replenishRate: 20
                 redis-rate-limiter.burstCapacity: 40
                 key-resolver: "#{@rateLimitKeyResolver}"
+        - id: trust
+          uri: ${TRUST_SERVICE_URI:http://localhost:8091}
+          predicates:
+            - Path=/api/v1/trust/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@rateLimitKeyResolver}"
       # /api/v1/tenants is deliberately not routed through the gateway —
       # it's a trusted-service-only endpoint (see Tenant's TenantController
       # Javadoc), never called by an end-user client.

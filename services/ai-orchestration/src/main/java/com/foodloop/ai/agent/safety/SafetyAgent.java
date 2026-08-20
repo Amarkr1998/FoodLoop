@@ -23,8 +23,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Fourth production agent (Phase 9, Safety half only — see
- * AgentPermissionRegistry's Javadoc on why Trust &amp; Risk is deferred).
+ * Fourth production agent (Phase 9, Safety half — Trust &amp; Risk was
+ * deferred at this same phase gate and later built as
+ * {@link com.foodloop.ai.agent.trust.TrustRiskAgent}).
  * Runs alongside {@link com.foodloop.ai.agent.foodintelligence.FoodIntelligenceAgent}
  * at listing creation (docs/architecture/05-ai-agent-architecture.md §22):
  * {@link com.foodloop.ai.api.FoodIntelligenceController} invokes both for

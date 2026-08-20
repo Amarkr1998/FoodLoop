@@ -59,6 +59,8 @@ foodloop:
       base-url: ${NOTIFICATION_SERVICE_URI:http://localhost:8088}
     ngo:
       base-url: ${NGO_SERVICE_URI:http://localhost:8090}
+    trust:
+      base-url: ${TRUST_SERVICE_URI:http://localhost:8091}
   ngo-coordination:
     # NgoCoordinationScheduler's sweep cadence and lookahead window (spec
     # §19's "scheduled sweep for open requests nearing needed_before"), plus

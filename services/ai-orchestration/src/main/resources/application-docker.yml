@@ -19,5 +19,7 @@ foodloop:
       base-url: http://notification:8088
     ngo:
       base-url: http://ngo:8090
+    trust:
+      base-url: http://trust:8091
   service-account:
     token-uri: http://keycloak:8080/realms/foodloop/protocol/openid-connect/token
