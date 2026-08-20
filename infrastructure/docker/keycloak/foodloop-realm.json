@@ -160,6 +160,30 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "foodloop-impact",
+      "publicClient": false,
+      "secret": "dev-only-impact-secret-change-me",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "description": "Impact service's client-credentials client for calling Food to enrich completed-pickup facts with quantity/category (Phase 11)",
+      "protocolMappers": [
+        {
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "users": [

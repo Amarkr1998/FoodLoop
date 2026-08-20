@@ -67,6 +67,17 @@ class TenantFilterTest {
     }
 
     @Test
+    void trustedImpactClientCanDelegateTenantViaHeader() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        authenticateAs(jwt("foodloop-impact", Map.of()));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Tenant-Id", tenantId.toString());
+
+        filter.doFilterInternal(request, new MockHttpServletResponse(), capturingChain(tenantId));
+    }
+
+    @Test
     void untrustedClientCannotDelegateTenantViaHeader() throws Exception {
         UUID tenantId = UUID.randomUUID();
         authenticateAs(jwt("foodloop-web", Map.of()));

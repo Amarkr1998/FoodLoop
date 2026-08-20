@@ -24,7 +24,8 @@ public class PickupEventPublisher {
 
     public void publishPickupCompleted(PickupTask task) {
         PickupCompletedEvent event = PickupCompletedEvent.of(
-                task.getTenantId(), task.getId(), task.getFoodListingId(), task.getClaimId());
+                task.getTenantId(), task.getId(), task.getFoodListingId(), task.getClaimId(),
+                task.getDonorUserId(), task.getReceiverUserId());
         send(PickupCompletedEvent.TOPIC, event, task.getId());
     }
 

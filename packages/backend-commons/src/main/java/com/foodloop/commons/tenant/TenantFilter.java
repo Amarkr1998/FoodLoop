@@ -49,7 +49,8 @@ public class TenantFilter extends OncePerRequestFilter {
     static final String TENANT_CLAIM = "tenant_id";
     static final String TENANT_HEADER = "X-Tenant-Id";
     static final String AZP_CLAIM = "azp";
-    static final Set<String> DELEGATED_TENANT_HEADER_CLIENTS = Set.of("foodloop-ai-orchestration", "foodloop-matching");
+    static final Set<String> DELEGATED_TENANT_HEADER_CLIENTS =
+            Set.of("foodloop-ai-orchestration", "foodloop-matching", "foodloop-impact");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

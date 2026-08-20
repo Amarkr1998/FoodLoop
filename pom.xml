@@ -111,9 +111,10 @@
     <module>services/ai-orchestration</module>
     <module>services/matching</module>
     <module>services/notification</module>
+    <module>services/impact</module>
     <!--
-      Each remaining bounded-context service (ngo, trust-safety, impact) is
-      added as its own module in the phase that builds it
+      Each remaining bounded-context service (ngo, trust-safety) is added
+      as its own module in the phase that builds it
       (docs/architecture/08-phases-mvp-risks.md), not scaffolded empty
       ahead of need (spec §63).
     -->

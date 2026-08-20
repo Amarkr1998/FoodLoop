@@ -1,0 +1,80 @@
+spring:
+  application:
+    name: impact
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foodloop}?currentSchema=impact
+    # Deliberately the unprivileged app role, not POSTGRES_USER — see
+    # infrastructure/docker/postgres/init/01-schemas-and-extensions.sql;
+    # POSTGRES_USER is a Postgres superuser and superusers bypass row-level
+    # security entirely (ADR-009).
+    username: ${POSTGRES_APP_USER:foodloop_app}
+    password: ${POSTGRES_APP_PASSWORD:foodloop_app_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: impact
+  flyway:
+    schemas: impact
+    default-schema: impact
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/foodloop}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      group-id: impact-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.foodloop.impact.infrastructure.events
+        # Must match the token Pickup's producer stamps for
+        # PickupCompletedEvent (see Pickup's producer config) — resolves it
+        # to this service's own copy of the class rather than Pickup's,
+        # which isn't on this classpath.
+        spring.json.type.mapping: pickup.completed:com.foodloop.impact.infrastructure.events.PickupCompletedEvent
+
+foodloop:
+  services:
+    food:
+      base-url: ${FOOD_SERVICE_URI:http://localhost:8084}
+  service-account:
+    # This service's own Keycloak client-credentials identity (see
+    # infrastructure/docker/keycloak/foodloop-realm.json's foodloop-impact
+    # client) — used to call Food as a scoped, re-validated call
+    # (docs/architecture/05-ai-agent-architecture.md §1), never with any
+    # inbound caller's token (this service has no inbound caller for the
+    # write path at all — it's Kafka-triggered).
+    client-id: foodloop-impact
+    client-secret: ${KEYCLOAK_IMPACT_CLIENT_SECRET:dev-only-impact-secret-change-me}
+    token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8081/realms/foodloop/protocol/openid-connect/token}
+
+server:
+  port: 8089
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}/v1/traces
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"

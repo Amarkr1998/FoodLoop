@@ -321,6 +321,32 @@ services:
       retries: 15
       start_period: 40s
 
+  impact:
+    build:
+      context: ../..
+      dockerfile: services/impact/Dockerfile
+    container_name: foodloop-impact
+    <<: *default-env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8089:8089"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      food:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8089/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+
   api-gateway:
     build:
       context: ../..
@@ -350,6 +376,8 @@ services:
       matching:
         condition: service_healthy
       notification:
+        condition: service_healthy
+      impact:
         condition: service_healthy
 
 volumes:
