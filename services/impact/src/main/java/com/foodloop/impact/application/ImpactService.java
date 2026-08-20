@@ -3,12 +3,15 @@ package com.foodloop.impact.application;
 import com.foodloop.commons.tenant.TenantContext;
 import com.foodloop.impact.client.FoodListingDto;
 import com.foodloop.impact.client.FoodServiceClient;
+import com.foodloop.impact.domain.CategoryImpactSummary;
 import com.foodloop.impact.domain.ImpactCalculator;
 import com.foodloop.impact.domain.ImpactSummary;
+import com.foodloop.impact.domain.MonthlyImpactSummary;
 import com.foodloop.impact.domain.RescueRecord;
 import com.foodloop.impact.domain.RescueRecordRepository;
 import com.foodloop.impact.infrastructure.events.PickupCompletedEvent;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,5 +85,37 @@ public class ImpactService {
     @Transactional(readOnly = true)
     public ImpactSummary getCommunityImpact() {
         return rescueRecordRepository.summarizeAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryImpactSummary> getOrgCategoryBreakdown(UUID orgId) {
+        return rescueRecordRepository.categoryBreakdownByDonorOrg(orgId).stream()
+                .map(row -> new CategoryImpactSummary(
+                        row.getFoodCategory(), row.getRescueCount(), row.getTotalKgSaved(), row.getTotalCo2SavedKg()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryImpactSummary> getCommunityCategoryBreakdown() {
+        return rescueRecordRepository.categoryBreakdownAll().stream()
+                .map(row -> new CategoryImpactSummary(
+                        row.getFoodCategory(), row.getRescueCount(), row.getTotalKgSaved(), row.getTotalCo2SavedKg()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MonthlyImpactSummary> getOrgMonthlyTrend(UUID orgId) {
+        return rescueRecordRepository.monthlyTrendByDonorOrg(orgId).stream()
+                .map(row -> new MonthlyImpactSummary(
+                        row.getMonth(), row.getRescueCount(), row.getTotalKgSaved(), row.getTotalCo2SavedKg()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MonthlyImpactSummary> getCommunityMonthlyTrend() {
+        return rescueRecordRepository.monthlyTrendAll().stream()
+                .map(row -> new MonthlyImpactSummary(
+                        row.getMonth(), row.getRescueCount(), row.getTotalKgSaved(), row.getTotalCo2SavedKg()))
+                .toList();
     }
 }

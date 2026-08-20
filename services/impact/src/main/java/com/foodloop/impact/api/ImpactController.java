@@ -1,6 +1,7 @@
 package com.foodloop.impact.api;
 
 import com.foodloop.impact.application.ImpactService;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -32,6 +33,30 @@ public class ImpactController {
     @GetMapping("/api/v1/impact/community")
     public ImpactSummaryResponse getCommunityImpact() {
         return ImpactSummaryResponse.from(impactService.getCommunityImpact());
+    }
+
+    /** Advanced analytics (spec Phase 12): same organization total, sliced by food category. */
+    @GetMapping("/api/v1/impact/organizations/{orgId}/breakdown")
+    public List<CategoryImpactResponse> getOrganizationCategoryBreakdown(@PathVariable UUID orgId) {
+        return impactService.getOrgCategoryBreakdown(orgId).stream().map(CategoryImpactResponse::from).toList();
+    }
+
+    /** Advanced analytics (spec Phase 12): same organization total, sliced by calendar month. */
+    @GetMapping("/api/v1/impact/organizations/{orgId}/trend")
+    public List<MonthlyImpactResponse> getOrganizationMonthlyTrend(@PathVariable UUID orgId) {
+        return impactService.getOrgMonthlyTrend(orgId).stream().map(MonthlyImpactResponse::from).toList();
+    }
+
+    /** Advanced analytics (spec Phase 12): same community total, sliced by food category. */
+    @GetMapping("/api/v1/impact/community/breakdown")
+    public List<CategoryImpactResponse> getCommunityCategoryBreakdown() {
+        return impactService.getCommunityCategoryBreakdown().stream().map(CategoryImpactResponse::from).toList();
+    }
+
+    /** Advanced analytics (spec Phase 12): same community total, sliced by calendar month. */
+    @GetMapping("/api/v1/impact/community/trend")
+    public List<MonthlyImpactResponse> getCommunityMonthlyTrend() {
+        return impactService.getCommunityMonthlyTrend().stream().map(MonthlyImpactResponse::from).toList();
     }
 
     private UUID callerUserId(JwtAuthenticationToken auth) {

@@ -9,7 +9,9 @@ import static org.mockito.Mockito.when;
 import com.foodloop.commons.tenant.TenantContext;
 import com.foodloop.impact.client.FoodListingDto;
 import com.foodloop.impact.client.FoodServiceClient;
+import com.foodloop.impact.domain.CategoryImpactSummary;
 import com.foodloop.impact.domain.ImpactSummary;
+import com.foodloop.impact.domain.MonthlyImpactSummary;
 import com.foodloop.impact.domain.RescueRecordRepository;
 import com.foodloop.impact.infrastructure.events.PickupCompletedEvent;
 import java.math.BigDecimal;
@@ -17,6 +19,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -135,5 +140,54 @@ class ImpactServiceTest {
         assertThat(summary.rescueCount()).isEqualTo(0);
         assertThat(summary.totalKgSaved()).isEqualByComparingTo("0");
         assertThat(summary.totalCo2SavedKg()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void categoryBreakdownGroupsByFoodCategoryOrderedByKgSavedDescending() {
+        UUID donorOrgId = UUID.randomUUID();
+        recordRescueAs(donorOrgId, "BAKERY", new BigDecimal("1"), "KG", Instant.now());
+        recordRescueAs(donorOrgId, "PRODUCE", new BigDecimal("5"), "KG", Instant.now());
+        recordRescueAs(donorOrgId, "PRODUCE", new BigDecimal("5"), "KG", Instant.now());
+
+        TenantContext.set(tenantId);
+        List<CategoryImpactSummary> orgBreakdown = impactService.getOrgCategoryBreakdown(donorOrgId);
+        assertThat(orgBreakdown).hasSize(2);
+        assertThat(orgBreakdown.get(0).foodCategory()).isEqualTo("PRODUCE");
+        assertThat(orgBreakdown.get(0).rescueCount()).isEqualTo(2);
+        assertThat(orgBreakdown.get(0).totalKgSaved()).isEqualByComparingTo("10.000");
+        assertThat(orgBreakdown.get(1).foodCategory()).isEqualTo("BAKERY");
+
+        List<CategoryImpactSummary> communityBreakdown = impactService.getCommunityCategoryBreakdown();
+        assertThat(communityBreakdown).hasSize(2);
+    }
+
+    @Test
+    void monthlyTrendGroupsByCalendarMonthOldestFirst() {
+        UUID donorOrgId = UUID.randomUUID();
+        Instant earlierMonth = LocalDate.of(2026, 1, 15).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant laterMonth = LocalDate.of(2026, 3, 20).atStartOfDay(ZoneOffset.UTC).toInstant();
+        recordRescueAs(donorOrgId, "PRODUCE", new BigDecimal("2"), "KG", earlierMonth);
+        recordRescueAs(donorOrgId, "PRODUCE", new BigDecimal("3"), "KG", laterMonth);
+
+        TenantContext.set(tenantId);
+        List<MonthlyImpactSummary> orgTrend = impactService.getOrgMonthlyTrend(donorOrgId);
+        assertThat(orgTrend).hasSize(2);
+        assertThat(orgTrend.get(0).month()).isEqualTo(LocalDate.of(2026, 1, 1));
+        assertThat(orgTrend.get(0).totalKgSaved()).isEqualByComparingTo("2.000");
+        assertThat(orgTrend.get(1).month()).isEqualTo(LocalDate.of(2026, 3, 1));
+        assertThat(orgTrend.get(1).totalKgSaved()).isEqualByComparingTo("3.000");
+
+        List<MonthlyImpactSummary> communityTrend = impactService.getCommunityMonthlyTrend();
+        assertThat(communityTrend).hasSize(2);
+    }
+
+    private void recordRescueAs(UUID donorOrgId, String foodCategory, BigDecimal quantityValue, String quantityUnit, Instant completedAt) {
+        UUID listingId = UUID.randomUUID();
+        when(foodServiceClient.getFoodListing(eq(tenantId), eq(listingId)))
+                .thenReturn(new FoodListingDto(listingId, donorOrgId, foodCategory, quantityValue, quantityUnit));
+
+        impactService.recordFromPickupCompleted(new PickupCompletedEvent(
+                UUID.randomUUID(), "PICKUP_COMPLETED", 1, tenantId, completedAt, "pickup-service",
+                UUID.randomUUID(), listingId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()));
     }
 }
