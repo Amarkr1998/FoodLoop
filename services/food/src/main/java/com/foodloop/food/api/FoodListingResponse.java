@@ -27,6 +27,8 @@ public record FoodListingResponse(
         String status,
         String verificationStatus,
         AiMetadataView aiMetadata,
+        boolean requiresSafetyReview,
+        String safetyReviewReason,
         Instant createdAt) {
 
     /** Null until the Food Intelligence Agent has analyzed this listing (spec §16) — advisory, never authoritative. */
@@ -73,6 +75,8 @@ public record FoodListingResponse(
                 listing.getStatus().name(),
                 listing.getVerificationStatus().name(),
                 AiMetadataView.from(listing.getAiMetadata()),
+                listing.isRequiresSafetyReview(),
+                listing.getSafetyReviewReason(),
                 listing.getCreatedAt());
     }
 
@@ -98,6 +102,8 @@ public record FoodListingResponse(
                 listing.getStatus().name(),
                 listing.getVerificationStatus().name(),
                 AiMetadataView.from(listing.getAiMetadata()),
+                listing.isRequiresSafetyReview(),
+                listing.getSafetyReviewReason(),
                 listing.getCreatedAt());
     }
 }

@@ -47,6 +47,16 @@ public class FoodServiceClient {
                 .body(FoodListingDto.class);
     }
 
+    /** The Safety Agent's write path (spec §22) — see FoodListing#flagForSafetyReview: raises the hold, never clears it. */
+    public FoodListingDto flagForSafetyReview(UUID tenantId, UUID listingId, String reason) {
+        return restClient.put()
+                .uri("/api/v1/food-listings/{id}/safety-flag", listingId)
+                .headers(headers -> authorize(headers, tenantId))
+                .body(new FlagSafetyReviewPayload(reason))
+                .retrieve()
+                .body(FoodListingDto.class);
+    }
+
     /** The Food Rescue Agent's expiry sweep (spec §18) calls this once per tenant per configured threshold. */
     public List<FoodListingDto> getExpiringListings(UUID tenantId, int withinMinutes) {
         List<FoodListingDto> listings = restClient.get()

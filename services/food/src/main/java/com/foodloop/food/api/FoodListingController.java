@@ -69,6 +69,32 @@ public class FoodListingController {
         return FoodListingResponse.from(foodListingService.applyAiMetadata(id, metadata));
     }
 
+    /**
+     * Written only by the AI orchestration service's flagForSafetyReview
+     * tool — same {@code azp} trust check as updateAiMetadata. The write
+     * itself is deliberately one-directional (see FoodListing#flagForSafetyReview):
+     * an agent can raise a hold, never clear one.
+     */
+    @PutMapping("/api/v1/food-listings/{id}/safety-flag")
+    public FoodListingResponse flagForSafetyReview(
+            JwtAuthenticationToken authentication, @PathVariable UUID id, @Valid @RequestBody FlagSafetyReviewRequest request) {
+        requireAiOrchestrationCaller(authentication);
+        return FoodListingResponse.from(foodListingService.flagForSafetyReview(id, request.reason()));
+    }
+
+    /**
+     * The one way a safety hold is lifted — gated on the caller's own
+     * signed realm role (Keycloak's {@code realm_access.roles} claim,
+     * standard OIDC shape), not an org-membership check like the donor
+     * endpoints above: reviewing a safety flag isn't the donor's call to
+     * make, whether or not they own the listing.
+     */
+    @PostMapping("/api/v1/food-listings/{id}/safety-flag/clear")
+    public FoodListingResponse clearSafetyReview(JwtAuthenticationToken authentication, @PathVariable UUID id) {
+        requireTrustOpsCaller(authentication);
+        return FoodListingResponse.from(foodListingService.clearSafetyReview(id));
+    }
+
     @PostMapping("/api/v1/food-listings/{id}/cancel")
     public FoodListingResponse cancel(JwtAuthenticationToken authentication, @PathVariable UUID id) {
         return FoodListingResponse.from(foodListingService.cancel(id, callerUserId(authentication)));
@@ -126,6 +152,24 @@ public class FoodListingController {
         if (!AI_ORCHESTRATION_CLIENT_ID.equals(azp)) {
             throw new ApiException("FORBIDDEN_AI_METADATA_WRITE", HttpStatus.FORBIDDEN,
                     "Only the AI orchestration service may write AI metadata.");
+        }
+    }
+
+    /**
+     * Reads Keycloak's standard {@code realm_access.roles} claim directly
+     * off the JWT — no service in this platform has needed a realm-role
+     * check before this endpoint, so there's no shared helper for it yet in
+     * backend-commons; adding one there ahead of a second caller would be
+     * the premature abstraction the project's own conventions warn against.
+     */
+    void requireTrustOpsCaller(JwtAuthenticationToken authentication) {
+        Object realmAccess = authentication.getToken().getClaims().get("realm_access");
+        List<String> roles = (realmAccess instanceof java.util.Map<?, ?> map && map.get("roles") instanceof List<?> rawRoles)
+                ? rawRoles.stream().map(String::valueOf).toList()
+                : List.of();
+        if (!roles.contains("TRUST_OPS") && !roles.contains("ADMIN")) {
+            throw new ApiException("FORBIDDEN_SAFETY_REVIEW_CLEAR", HttpStatus.FORBIDDEN,
+                    "Only TRUST_OPS or ADMIN may clear a safety review hold.");
         }
     }
 

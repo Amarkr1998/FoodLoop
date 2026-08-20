@@ -104,6 +104,13 @@ public class FoodListing {
     @Column(name = "ai_metadata")
     private FoodAiMetadata aiMetadata;
 
+    /** The Safety Agent's pre-publish hold (spec §22) — see V2 migration's Javadoc for why this isn't a FoodStatus. */
+    @Column(name = "requires_safety_review", nullable = false)
+    private boolean requiresSafetyReview = false;
+
+    @Column(name = "safety_review_reason")
+    private String safetyReviewReason;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -155,7 +162,29 @@ public class FoodListing {
             throw new ApiException("INVALID_STATE_TRANSITION", HttpStatus.CONFLICT,
                     "Cannot transition food listing from " + status + " to " + target + ".");
         }
+        if (target == FoodStatus.PUBLISHED && requiresSafetyReview) {
+            throw new ApiException("SAFETY_REVIEW_REQUIRED", HttpStatus.CONFLICT,
+                    "This listing is on hold for safety review and cannot be published yet.");
+        }
         this.status = target;
+    }
+
+    /**
+     * The Safety Agent's write path (spec §22) — a deterministic guard
+     * ({@link #transitionTo}), not the agent's own raw text, is what
+     * actually blocks publish; this method only ever sets the flag, never
+     * clears it, so an agent run can never talk its way past a hold a
+     * previous run raised.
+     */
+    public void flagForSafetyReview(String reason) {
+        this.requiresSafetyReview = true;
+        this.safetyReviewReason = reason;
+    }
+
+    /** Human-only (see FoodListingController's requireTrustOpsCaller) — the one way a hold is lifted. */
+    public void clearSafetyReview() {
+        this.requiresSafetyReview = false;
+        this.safetyReviewReason = null;
     }
 
     /**
@@ -178,6 +207,14 @@ public class FoodListing {
 
     public FoodAiMetadata getAiMetadata() {
         return aiMetadata;
+    }
+
+    public boolean isRequiresSafetyReview() {
+        return requiresSafetyReview;
+    }
+
+    public String getSafetyReviewReason() {
+        return safetyReviewReason;
     }
 
     public UUID getId() {

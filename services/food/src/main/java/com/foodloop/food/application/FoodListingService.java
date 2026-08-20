@@ -78,6 +78,22 @@ public class FoodListingService {
         return foodListingRepository.save(listing);
     }
 
+    /** The Safety Agent's write path (spec §22) — same trusted-service-account pattern as {@link #applyAiMetadata}. */
+    @Transactional
+    public FoodListing flagForSafetyReview(UUID id, String reason) {
+        FoodListing listing = get(id);
+        listing.flagForSafetyReview(reason);
+        return foodListingRepository.save(listing);
+    }
+
+    /** Human-only — see FoodListingController's requireTrustOpsCaller. */
+    @Transactional
+    public FoodListing clearSafetyReview(UUID id) {
+        FoodListing listing = get(id);
+        listing.clearSafetyReview();
+        return foodListingRepository.save(listing);
+    }
+
     @Transactional
     public FoodListing cancel(UUID id, UUID callerUserId) {
         FoodListing listing = getOwned(id, callerUserId);
