@@ -63,10 +63,25 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       CLUSTER_ID: "ZmZmZmZmZmZmZmZmZmZmZm"
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      # A raw TCP probe, not kafka-broker-api-versions.sh: that script
+      # launches its own fresh JVM per invocation, which measured 20-30s+
+      # wall time under this VM's contention (9+ app-service JVMs booting
+      # concurrently) even though the broker itself was idle and
+      # responded instantly once connected — bumping the timeout from
+      # 10s to 30s still wasn't enough (a later run hit the 30s cap too).
+      # A bash /dev/tcp check has no JVM startup cost of its own, so it
+      # reflects the broker's actual readiness instead of CPU scheduling
+      # luck.
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9092'"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 10
+      # See keycloak's start_period comment — same resource-contention
+      # timing issue: the broker was actually up and responsive well
+      # before the bare retries*interval window without this, verified
+      # by running the healthcheck command manually against a "unhealthy"
+      # container and finding it succeeded.
+      start_period: 60s
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -80,9 +95,15 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      # Not rabbitmq-diagnostics ping: it spins up its own separate
+      # Erlang VM per invocation to connect via distributed Erlang, which
+      # measured timing out under this VM's CPU contention (same root
+      # cause as kafka's healthcheck, fixed the same way) even though the
+      # broker itself started fine and was listening on 5672 the whole
+      # time. A bash TCP probe has no per-check VM startup cost.
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/5672'"]
       interval: 10s
-      timeout: 10s
+      timeout: 5s
       retries: 10
 
   # ---------------------------------------------------------------------
@@ -95,6 +116,20 @@ services:
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_dev_only}
+      # Without a fixed hostname, Keycloak stamps each token's `iss` claim
+      # from whatever Host header the request arrived with — so a token
+      # requested from the host machine via localhost:8081 gets
+      # iss=http://localhost:8081/..., while every app service validates
+      # against KEYCLOAK_ISSUER_URI=http://keycloak:8080/... (the internal
+      # Docker hostname), an exact string mismatch that fails validation
+      # with a bare 401. Pinning the hostname makes every issued token
+      # carry the same issuer regardless of which route reached Keycloak.
+      # A bare hostname plus KC_HOSTNAME_PORT wasn't enough — Keycloak
+      # 25's hostname v2 provider still leaked the actual connection port
+      # (8081, from the host-mapped port) into the iss claim instead of
+      # honoring KC_HOSTNAME_PORT. A full URL is authoritative for both.
+      KC_HOSTNAME: http://keycloak:8080
+      KC_HOSTNAME_STRICT: "false"
     ports:
       - "8081:8080"
     volumes:
@@ -104,6 +139,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      # Keycloak's start-dev + realm import routinely takes well over the
+      # bare retries*interval window (~100s) on a resource-constrained
+      # dev machine — start_period keeps early failures from counting
+      # against the retry budget before it's had a real chance to come up.
+      start_period: 90s
 
   # ---------------------------------------------------------------------
   # Observability foundation (optional locally: `docker compose --profile observability up -d`)
@@ -165,7 +205,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      # This dev VM has ~3.8GB total for the whole stack; with 9+ app
+      # JVMs booting concurrently, a single service's Flyway+Hibernate
+      # bootstrap alone was measured taking 6+ minutes (vs. the prior
+      # 190s budget) — see keycloak/kafka's start_period comments for
+      # the same root cause.
+      start_period: 480s
 
   tenant:
     build:
@@ -189,7 +234,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   food:
     build:
@@ -213,7 +258,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   pickup:
     build:
@@ -237,7 +282,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   ai-orchestration:
     build:
@@ -269,7 +314,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   matching:
     build:
@@ -297,7 +342,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   notification:
     build:
@@ -319,7 +364,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   impact:
     build:
@@ -345,7 +390,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   ngo:
     build:
@@ -369,7 +414,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   trust:
     build:
@@ -393,7 +438,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 15
-      start_period: 40s
+      start_period: 480s
 
   api-gateway:
     build:
