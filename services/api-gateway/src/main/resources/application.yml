@@ -114,7 +114,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/foodloop}
+          # Not issuer-uri: see application-docker.yml's comment. This base
+          # file is loaded even under the docker profile (Spring profiles
+          # layer additively, they don't replace), so issuer-uri here was
+          # silently re-enabling strict iss-claim matching regardless of
+          # the docker profile's jwk-set-uri override — found live via a
+          # "The iss claim is not valid" 401 despite the docker config
+          # looking correct.
+          jwk-set-uri: http://localhost:8081/realms/foodloop/protocol/openid-connect/certs
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -134,6 +141,7 @@ management:
       probes:
         enabled: true
   tracing:
+    enabled: ${OTEL_TRACING_ENABLED:false}
     sampling:
       probability: 1.0
   otlp:

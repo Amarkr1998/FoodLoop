@@ -15,7 +15,7 @@ import java.util.UUID;
 public record RegisterUserRequest(
         @NotNull UUID tenantId,
         @NotBlank @Email String email,
-        @NotBlank @Size(min = 12, message = "password must be at least 12 characters") String password,
+        @NotBlank @Size(min = 8, message = "password must be at least 8 characters") String password,
         @NotBlank String displayName,
         String locale) {
 }

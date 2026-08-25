@@ -40,9 +40,13 @@
       "clientId": "foodloop-web",
       "publicClient": true,
       "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
       "redirectUris": ["http://localhost:3000/*"],
       "webOrigins": ["http://localhost:3000"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
       "protocolMappers": [
         {
           "name": "tenant_id",
@@ -65,6 +69,9 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "redirectUris": ["foodloop://*", "exp://*"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
       "protocolMappers": [
         {
           "name": "tenant_id",

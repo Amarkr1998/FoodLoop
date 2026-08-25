@@ -28,7 +28,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/foodloop}
+          # See api-gateway's application.yml for why jwk-set-uri, not
+          # issuer-uri (this base file loads under every profile).
+          jwk-set-uri: http://localhost:8081/realms/foodloop/protocol/openid-connect/certs
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     producer:
@@ -56,6 +58,7 @@ management:
         enabled: true
       show-details: never
   tracing:
+    enabled: ${OTEL_TRACING_ENABLED:false}
     sampling:
       probability: 1.0
   otlp:

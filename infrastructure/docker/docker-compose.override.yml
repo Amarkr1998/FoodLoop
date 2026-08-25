@@ -1,0 +1,100 @@
+# Development memory limits to prevent OOM on resource-constrained dev machines
+# Each Java service allocated 1.5GB limit, 1GB reservation
+services:
+  identity:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  tenant:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  food:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  pickup:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  ai-orchestration:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  matching:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  notification:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  impact:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  ngo:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  trust:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  api-gateway:
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
+        reservations:
+          memory: 1000M
+
+  # Reduce healthcheck start_period parallelism by extending timeouts
+  kafka:
+    healthcheck:
+      timeout: 10s
+      start_period: 120s
+
+  keycloak:
+    healthcheck:
+      start_period: 120s

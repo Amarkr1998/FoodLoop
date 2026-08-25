@@ -3,7 +3,20 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://keycloak:8080/realms/foodloop
+          # Not issuer-uri: that also enforces the token's `iss` claim
+          # equals this exact string, but tokens obtained through the
+          # browser-facing frontend (apps/web, via localhost:8081) carry
+          # iss=http://localhost:8081/... while this internal Docker
+          # hostname is the only address reachable from inside the
+          # container. jwk-set-uri fetches signing keys directly and does
+          # NOT add issuer-claim validation (Spring only adds that
+          # validator when configured via issuer-uri) — signature
+          # verification is still fully enforced, only the issuer-string
+          # pin is dropped. Fine for this single-realm local dev setup;
+          # revisit with an explicit multi-issuer validator before this
+          # topology (frontend and backend reaching Keycloak by different
+          # hostnames) is used anywhere beyond local dev.
+          jwk-set-uri: http://keycloak:8080/realms/foodloop/protocol/openid-connect/certs
   data:
     redis:
       host: redis

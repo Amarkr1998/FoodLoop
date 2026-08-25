@@ -6,13 +6,19 @@ import com.foodloop.identity.domain.AppUser;
 import com.foodloop.identity.domain.AppUserRepository;
 import com.foodloop.identity.infrastructure.events.UserEventPublisher;
 import com.foodloop.identity.infrastructure.events.UserRegisteredEvent;
+import com.foodloop.identity.infrastructure.keycloak.EmailAlreadyRegisteredException;
 import com.foodloop.identity.infrastructure.keycloak.KeycloakUserProvisioner;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RegistrationService {
+
+    private static final Logger log = LoggerFactory.getLogger(RegistrationService.class);
 
     private final KeycloakUserProvisioner keycloakUserProvisioner;
     private final AppUserRepository appUserRepository;
@@ -44,6 +50,18 @@ public class RegistrationService {
      * (correctly ordered) transaction keeps that sequencing intact.
      */
     public AppUser register(RegisterUserRequest request) {
+        // Cheap local check before the external Keycloak call: catches the
+        // common case (this platform profile already exists) without ever
+        // provisioning a Keycloak account we'd then have no use for.
+        TenantContext.set(request.tenantId());
+        try {
+            if (appUserRepository.existsByTenantIdAndEmail(request.tenantId(), request.email())) {
+                throw new EmailAlreadyRegisteredException(request.email());
+            }
+        } finally {
+            TenantContext.clear();
+        }
+
         UUID keycloakId = keycloakUserProvisioner.createUser(
                 request.tenantId(), request.email(), request.password(), request.displayName());
 
@@ -58,6 +76,17 @@ public class RegistrationService {
                     MDC.get("correlationId")));
 
             return saved;
+        } catch (DataIntegrityViolationException e) {
+            // A concurrent request won the race between the check above and
+            // this save. The Keycloak account we just created is now
+            // orphaned (no matching profile row) — remove it rather than
+            // leaving a phantom account a user can never actually use.
+            try {
+                keycloakUserProvisioner.deleteUser(keycloakId);
+            } catch (RuntimeException cleanupFailure) {
+                log.warn("Failed to clean up orphaned Keycloak user {} after duplicate registration", keycloakId, cleanupFailure);
+            }
+            throw new EmailAlreadyRegisteredException(request.email());
         } finally {
             TenantContext.clear();
         }

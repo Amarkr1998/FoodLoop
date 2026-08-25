@@ -5,7 +5,10 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://keycloak:8080/realms/foodloop
+          # See api-gateway's application-docker.yml for why jwk-set-uri
+          # (not issuer-uri): decouples internal key-fetch reachability
+          # from the browser-facing frontend's different-hostname iss claim.
+          jwk-set-uri: http://keycloak:8080/realms/foodloop/protocol/openid-connect/certs
 
 foodloop:
   services:

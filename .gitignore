@@ -12,6 +12,8 @@ build/
 .expo/
 *.tsbuildinfo
 coverage/
+.turbo/
+packages/api-client/src/generated/
 
 # Env & secrets
 .env

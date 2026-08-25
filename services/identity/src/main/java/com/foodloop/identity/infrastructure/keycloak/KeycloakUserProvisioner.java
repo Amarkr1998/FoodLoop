@@ -57,6 +57,17 @@ public class KeycloakUserProvisioner {
     }
 
     /**
+     * Compensating action for when Keycloak account creation succeeds but the
+     * platform-side profile write fails afterward (e.g. a race lets two
+     * concurrent registrations both pass the pre-check) — best-effort only,
+     * since the caller is already in an error path and must not let a
+     * secondary failure here mask the original one.
+     */
+    public void deleteUser(UUID id) {
+        keycloakAdminClient.realm(properties.realm()).users().get(id.toString()).remove();
+    }
+
+    /**
      * Phase 10's volunteer onboarding is this method's first caller — no
      * user has ever been granted a realm role by this platform before now
      * (every prior authorization check reads whatever roles a token already

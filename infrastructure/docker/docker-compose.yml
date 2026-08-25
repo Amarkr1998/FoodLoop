@@ -116,23 +116,36 @@ services:
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_dev_only}
-      # Without a fixed hostname, Keycloak stamps each token's `iss` claim
-      # from whatever Host header the request arrived with — so a token
-      # requested from the host machine via localhost:8081 gets
-      # iss=http://localhost:8081/..., while every app service validates
-      # against KEYCLOAK_ISSUER_URI=http://keycloak:8080/... (the internal
-      # Docker hostname), an exact string mismatch that fails validation
-      # with a bare 401. Pinning the hostname makes every issued token
-      # carry the same issuer regardless of which route reached Keycloak.
-      # A bare hostname plus KC_HOSTNAME_PORT wasn't enough — Keycloak
-      # 25's hostname v2 provider still leaked the actual connection port
-      # (8081, from the host-mapped port) into the iss claim instead of
-      # honoring KC_HOSTNAME_PORT. A full URL is authoritative for both.
-      KC_HOSTNAME: http://keycloak:8080
-      KC_HOSTNAME_STRICT: "false"
+      # No fixed KC_HOSTNAME here deliberately: an earlier attempt pinned
+      # this to http://keycloak:8080 so every token's iss claim matched
+      # what backend services expected, but that broke browser-facing auth
+      # (apps/web) — the browser can't resolve the internal Docker hostname
+      # `keycloak`, so login redirects 404'd. Backend services no longer
+      # need a fixed issuer anyway: their resourceserver.jwt config uses
+      # jwk-set-uri (see each service's application-docker.yml) to fetch
+      # signing keys from a hardcoded internally-reachable URL directly,
+      # independent of whatever iss string a token carries. With that in
+      # place, leaving hostname unpinned is correct: Keycloak just echoes
+      # back whatever Host header each request actually used (localhost:8081
+      # for the browser/host-run Next.js, keycloak:8080 for anything
+      # internal that still does discovery), and nothing depends on those
+      # being the same value.
     ports:
       - "8081:8080"
     volumes:
+      # Without this, Keycloak's embedded database (signing keys, active
+      # sessions, refresh tokens, and any user registered at runtime) lives
+      # only in the container's writable layer — every recreate (a plain
+      # `docker compose up -d` picking up an unrelated config change is
+      # enough, not just an explicit rebuild) silently invalidates every
+      # existing browser session with no error until the next request,
+      # and wipes every registered user. This volume is what makes
+      # Keycloak survive restarts like every other stateful service here
+      # already does (postgres, redis, etc.). --import-realm below is
+      # still safe with this in place: Keycloak skips importing a realm
+      # that already exists in its database, so it only actually seeds
+      # anything on a genuinely fresh volume.
+      - keycloak_data:/opt/keycloak/data
       - ./keycloak/foodloop-realm.json:/opt/keycloak/data/import/foodloop-realm.json:ro
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080"]
@@ -143,7 +156,13 @@ services:
       # bare retries*interval window (~100s) on a resource-constrained
       # dev machine — start_period keeps early failures from counting
       # against the retry budget before it's had a real chance to come up.
-      start_period: 90s
+      # Bumped from 90s once a persistent volume was added for Keycloak's
+      # own database (see the keycloak_data volume comment above): the
+      # first-ever Liquibase schema migration against a fresh persistent
+      # store is measurably slower than the previous ephemeral/ad-hoc
+      # startup path, confirmed live by watching it still mid-migration
+      # well past the old 190s total budget.
+      start_period: 300s
 
   # ---------------------------------------------------------------------
   # Observability foundation (optional locally: `docker compose --profile observability up -d`)
@@ -482,3 +501,4 @@ volumes:
   redis_data:
   rabbitmq_data:
   grafana_data:
+  keycloak_data:
