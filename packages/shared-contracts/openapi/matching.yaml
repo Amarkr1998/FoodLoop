@@ -1,0 +1,134 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8087
+  description: Generated server url
+paths:
+  /api/v1/matches:
+    get:
+      tags:
+      - match-proposal-controller
+      operationId: listForListing
+      parameters:
+      - name: foodListingId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchProposalResponse'
+    post:
+      tags:
+      - match-proposal-controller
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMatchProposalRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/MatchProposalResponse'
+  /api/v1/matches/candidates:
+    get:
+      tags:
+      - match-proposal-controller
+      operationId: candidates
+      parameters:
+      - name: foodListingId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: radiusKm
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchCandidateResponse'
+components:
+  schemas:
+    CreateMatchProposalRequest:
+      required:
+      - foodListingId
+      - receiverOrgId
+      type: object
+      properties:
+        foodListingId:
+          type: string
+          format: uuid
+        receiverOrgId:
+          type: string
+          format: uuid
+        aiRationale:
+          type: string
+        ngoRequestId:
+          type: string
+          format: uuid
+    MatchProposalResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        foodListingId:
+          type: string
+          format: uuid
+        receiverOrgId:
+          type: string
+          format: uuid
+        distanceMeters:
+          type: number
+        score:
+          type: number
+        aiRationale:
+          type: string
+        ngoRequestId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    MatchCandidateResponse:
+      type: object
+      properties:
+        receiverOrgId:
+          type: string
+          format: uuid
+        receiverOrgName:
+          type: string
+        distanceMeters:
+          type: number
+          format: double
+        score:
+          type: number

@@ -1,0 +1,247 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8091
+  description: Generated server url
+paths:
+  /api/v1/trust/risk-cases:
+    get:
+      tags:
+      - risk-case-controller
+      operationId: listForUser
+      parameters:
+      - name: targetUserId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RiskCaseResponse'
+    post:
+      tags:
+      - risk-case-controller
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRiskCaseRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/RiskCaseResponse'
+  /api/v1/trust/risk-cases/{id}/resolve:
+    post:
+      tags:
+      - risk-case-controller
+      operationId: resolve
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveRiskCaseRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/RiskCaseResponse'
+  /api/v1/trust/reports:
+    get:
+      tags:
+      - report-controller
+      operationId: listForUser_1
+      parameters:
+      - name: targetUserId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReportResponse'
+    post:
+      tags:
+      - report-controller
+      operationId: create_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReportRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+  /api/v1/trust/signals/{targetUserId}:
+    get:
+      tags:
+      - report-controller
+      operationId: getSignals
+      parameters:
+      - name: targetUserId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/UserBehaviorSignalResponse'
+  /api/v1/trust/risk-cases/{id}:
+    get:
+      tags:
+      - risk-case-controller
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/RiskCaseResponse'
+components:
+  schemas:
+    CreateRiskCaseRequest:
+      required:
+      - targetUserId
+      type: object
+      properties:
+        targetUserId:
+          type: string
+          format: uuid
+        riskFactors:
+          type: string
+    RiskCaseResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        targetUserId:
+          type: string
+          format: uuid
+        riskScore:
+          type: number
+        riskFactors:
+          type: string
+        requiresHumanReview:
+          type: boolean
+        status:
+          type: string
+        resolutionAction:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+    ResolveRiskCaseRequest:
+      required:
+      - resolutionAction
+      type: object
+      properties:
+        resolutionAction:
+          type: string
+    CreateReportRequest:
+      required:
+      - reason
+      - targetUserId
+      type: object
+      properties:
+        targetUserId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          enum:
+          - SAFETY
+          - FRAUD
+          - HARASSMENT
+          - NO_SHOW
+          - SPAM
+          - OTHER
+        description:
+          type: string
+    ReportResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reporterUserId:
+          type: string
+          format: uuid
+        targetUserId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    UserBehaviorSignalResponse:
+      type: object
+      properties:
+        reportCount:
+          type: integer
+          format: int32
+        distinctReporterCount:
+          type: integer
+          format: int32
+        mostRecentReportAt:
+          type: string
+          format: date-time
+        reasonCounts:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64

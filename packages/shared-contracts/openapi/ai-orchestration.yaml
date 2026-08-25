@@ -1,0 +1,276 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8086
+  description: Generated server url
+paths:
+  /api/v1/ai/trust/assess:
+    post:
+      tags:
+      - trust-controller
+      operationId: assess
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessTrustRiskRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AssessTrustRiskResponse'
+  /api/v1/ai/rescue/check:
+    post:
+      tags:
+      - rescue-controller
+      operationId: check
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescueCheckRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/RescueCheckResponse'
+  /api/v1/ai/matching/suggest:
+    post:
+      tags:
+      - matching-controller
+      operationId: suggest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestMatchRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/SuggestMatchResponse'
+  /api/v1/ai/food-listings/{id}/analyze:
+    post:
+      tags:
+      - food-intelligence-controller
+      operationId: analyze
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AnalyzeFoodListingResponse'
+  /api/v1/ai/agent-runs/{id}/escalate/resolve:
+    post:
+      tags:
+      - agent-run-controller
+      operationId: resolve
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveEscalationRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AgentRunResponse'
+components:
+  schemas:
+    AssessTrustRiskRequest:
+      required:
+      - targetUserId
+      type: object
+      properties:
+        targetUserId:
+          type: string
+          format: uuid
+    AssessTrustRiskResponse:
+      type: object
+      properties:
+        agentRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        escalated:
+          type: boolean
+        outcomeSummary:
+          type: string
+    RescueCheckRequest:
+      required:
+      - foodListingId
+      - threshold
+      type: object
+      properties:
+        foodListingId:
+          type: string
+          format: uuid
+        threshold:
+          type: string
+          enum:
+          - T_MINUS_4H
+          - T_MINUS_1H
+    RescueCheckResponse:
+      type: object
+      properties:
+        agentRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        escalated:
+          type: boolean
+        outcomeSummary:
+          type: string
+    SuggestMatchRequest:
+      required:
+      - foodListingId
+      type: object
+      properties:
+        foodListingId:
+          type: string
+          format: uuid
+    MatchProposalDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        foodListingId:
+          type: string
+          format: uuid
+        receiverOrgId:
+          type: string
+          format: uuid
+        distanceMeters:
+          type: number
+        score:
+          type: number
+        aiRationale:
+          type: string
+        ngoRequestId:
+          type: string
+          format: uuid
+        status:
+          type: string
+    SuggestMatchResponse:
+      type: object
+      properties:
+        agentRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        escalated:
+          type: boolean
+        outcomeSummary:
+          type: string
+        proposal:
+          $ref: '#/components/schemas/MatchProposalDto'
+    AnalyzeFoodListingResponse:
+      type: object
+      properties:
+        agentRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        escalated:
+          type: boolean
+        outcomeSummary:
+          type: string
+        analysis:
+          $ref: '#/components/schemas/FoodIntelligenceOutput'
+        safety:
+          $ref: '#/components/schemas/SafetyView'
+    FoodIntelligenceOutput:
+      type: object
+      properties:
+        category:
+          type: string
+        dietaryTypes:
+          type: array
+          items:
+            type: string
+        allergens:
+          type: array
+          items:
+            type: string
+        estimatedServings:
+          type: integer
+          format: int32
+        urgency:
+          type: string
+        missingInformation:
+          type: array
+          items:
+            type: string
+        suggestedDescription:
+          type: string
+        confidence:
+          type: number
+          format: double
+    SafetyView:
+      type: object
+      properties:
+        agentRunId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        flagged:
+          type: boolean
+    ResolveEscalationRequest:
+      required:
+      - approve
+      type: object
+      properties:
+        approve:
+          type: boolean
+    AgentRunResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agentName:
+          type: string
+        status:
+          type: string
+        escalated:
+          type: boolean
+        outcomeSummary:
+          type: string
+        completedAt:
+          type: string
+          format: date-time

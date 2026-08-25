@@ -1,0 +1,521 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8085
+  description: Generated server url
+paths:
+  /api/v1/volunteers:
+    post:
+      tags:
+      - volunteer-controller
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterVolunteerRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/VolunteerProfileResponse'
+  /api/v1/pickups/{id}/unassign:
+    post:
+      tags:
+      - pickup-task-controller
+      operationId: unassign
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/{id}/system-unassign:
+    post:
+      tags:
+      - pickup-task-controller
+      operationId: systemUnassign
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/{id}/request-volunteer:
+    post:
+      tags:
+      - pickup-task-controller
+      operationId: requestVolunteer
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/{id}/report-no-show:
+    post:
+      tags:
+      - pickup-task-controller
+      operationId: reportNoShow
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/{id}/en-route:
+    post:
+      tags:
+      - pickup-task-controller
+      operationId: enRoute
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/{id}/complete:
+    post:
+      tags:
+      - pickup-task-controller
+      operationId: complete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/{id}/claim:
+    post:
+      tags:
+      - pickup-task-controller
+      operationId: claim
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/{id}/arrived:
+    post:
+      tags:
+      - pickup-task-controller
+      operationId: arrived
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/volunteers/me/location:
+    patch:
+      tags:
+      - volunteer-controller
+      operationId: updateLocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/VolunteerProfileResponse'
+  /api/v1/volunteers/me/availability:
+    patch:
+      tags:
+      - volunteer-controller
+      operationId: updateAvailability
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAvailabilityRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/VolunteerProfileResponse'
+  /api/v1/volunteers/me:
+    get:
+      tags:
+      - volunteer-controller
+      operationId: me
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/VolunteerProfileResponse'
+  /api/v1/pickups/{id}:
+    get:
+      tags:
+      - pickup-task-controller
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/{id}/nearby-volunteers:
+    get:
+      tags:
+      - pickup-task-controller
+      operationId: nearbyVolunteers
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: radiusKm
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+          default: 10.0
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VolunteerProfileResponse'
+  /api/v1/pickups/delayed:
+    get:
+      tags:
+      - pickup-task-controller
+      operationId: delayed
+      parameters:
+      - name: asOf
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PickupTaskResponse'
+  /api/v1/pickups/available:
+    get:
+      tags:
+      - pickup-task-controller
+      operationId: available
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: lng
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: radiusKm
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+          default: 10.0
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PagePickupTaskResponse'
+components:
+  schemas:
+    RegisterVolunteerRequest:
+      required:
+      - vehicleType
+      type: object
+      properties:
+        vehicleType:
+          type: string
+          enum:
+          - ON_FOOT
+          - BICYCLE
+          - SCOOTER
+          - CAR
+        capacityServings:
+          type: integer
+          format: int32
+    VolunteerProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        vehicleType:
+          type: string
+        capacityServings:
+          type: integer
+          format: int32
+        available:
+          type: boolean
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+    PickupTaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        claimId:
+          type: string
+          format: uuid
+        foodListingId:
+          type: string
+          format: uuid
+        donorUserId:
+          type: string
+          format: uuid
+        receiverUserId:
+          type: string
+          format: uuid
+        assignedVolunteerId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        scheduledWindowStart:
+          type: string
+          format: date-time
+        scheduledWindowEnd:
+          type: string
+          format: date-time
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        completedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    UpdateLocationRequest:
+      required:
+      - latitude
+      - longitude
+      type: object
+      properties:
+        latitude:
+          maximum: 90.0
+          exclusiveMaximum: false
+          minimum: -90.0
+          exclusiveMinimum: false
+          type: number
+        longitude:
+          maximum: 180.0
+          exclusiveMaximum: false
+          minimum: -180.0
+          exclusiveMinimum: false
+          type: number
+    UpdateAvailabilityRequest:
+      required:
+      - available
+      type: object
+      properties:
+        available:
+          type: boolean
+    PagePickupTaskResponse:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        pageable:
+          $ref: '#/components/schemas/PageableObject'
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/PickupTaskResponse'
+        number:
+          type: integer
+          format: int32
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/SortObject'
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        unpaged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        paged:
+          type: boolean
+        pageSize:
+          type: integer
+          format: int32
+        offset:
+          type: integer
+          format: int64
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/SortObject'
+    SortObject:
+      type: object
+      properties:
+        direction:
+          type: string
+        nullHandling:
+          type: string
+        ascending:
+          type: boolean
+        property:
+          type: string
+        ignoreCase:
+          type: boolean

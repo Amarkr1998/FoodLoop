@@ -1,0 +1,165 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8089
+  description: Generated server url
+paths:
+  /api/v1/impact/organizations/{orgId}:
+    get:
+      tags:
+      - impact-controller
+      operationId: getOrganizationImpact
+      parameters:
+      - name: orgId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ImpactSummaryResponse'
+  /api/v1/impact/organizations/{orgId}/trend:
+    get:
+      tags:
+      - impact-controller
+      operationId: getOrganizationMonthlyTrend
+      parameters:
+      - name: orgId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonthlyImpactResponse'
+  /api/v1/impact/organizations/{orgId}/breakdown:
+    get:
+      tags:
+      - impact-controller
+      operationId: getOrganizationCategoryBreakdown
+      parameters:
+      - name: orgId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryImpactResponse'
+  /api/v1/impact/me:
+    get:
+      tags:
+      - impact-controller
+      operationId: getMyImpact
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PersonalImpactResponse'
+  /api/v1/impact/community:
+    get:
+      tags:
+      - impact-controller
+      operationId: getCommunityImpact
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ImpactSummaryResponse'
+  /api/v1/impact/community/trend:
+    get:
+      tags:
+      - impact-controller
+      operationId: getCommunityMonthlyTrend
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonthlyImpactResponse'
+  /api/v1/impact/community/breakdown:
+    get:
+      tags:
+      - impact-controller
+      operationId: getCommunityCategoryBreakdown
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryImpactResponse'
+components:
+  schemas:
+    ImpactSummaryResponse:
+      type: object
+      properties:
+        rescueCount:
+          type: integer
+          format: int64
+        estimatedKgSaved:
+          type: number
+        estimatedCo2SavedKg:
+          type: number
+    MonthlyImpactResponse:
+      type: object
+      properties:
+        month:
+          type: string
+          format: date
+        rescueCount:
+          type: integer
+          format: int64
+        estimatedKgSaved:
+          type: number
+        estimatedCo2SavedKg:
+          type: number
+    CategoryImpactResponse:
+      type: object
+      properties:
+        foodCategory:
+          type: string
+        rescueCount:
+          type: integer
+          format: int64
+        estimatedKgSaved:
+          type: number
+        estimatedCo2SavedKg:
+          type: number
+    PersonalImpactResponse:
+      type: object
+      properties:
+        asDonor:
+          $ref: '#/components/schemas/ImpactSummaryResponse'
+        asReceiver:
+          $ref: '#/components/schemas/ImpactSummaryResponse'

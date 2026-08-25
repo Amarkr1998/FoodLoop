@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# From apps/web's create-next-app scaffold: approve these native build
+# scripts (sharp for image optimization, unrs-resolver for faster module
+# resolution) so pnpm doesn't block them behind an interactive prompt.
+allowBuilds:
+  sharp: false
+  unrs-resolver: false

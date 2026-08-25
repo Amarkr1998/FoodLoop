@@ -1,0 +1,555 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8084
+  description: Generated server url
+paths:
+  /api/v1/food-listings/{id}/safety-flag:
+    put:
+      tags:
+      - food-listing-controller
+      operationId: flagForSafetyReview
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlagSafetyReviewRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FoodListingResponse'
+  /api/v1/food-listings/{id}/ai-metadata:
+    put:
+      tags:
+      - food-listing-controller
+      operationId: updateAiMetadata
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAiMetadataRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FoodListingResponse'
+  /api/v1/food-listings:
+    get:
+      tags:
+      - food-listing-controller
+      operationId: search
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: lng
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+      - name: radiusKm
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+          default: 5.0
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: dietaryType
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageFoodListingResponse'
+    post:
+      tags:
+      - food-listing-controller
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFoodListingRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FoodListingResponse'
+  /api/v1/food-listings/{id}/safety-flag/clear:
+    post:
+      tags:
+      - food-listing-controller
+      operationId: clearSafetyReview
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FoodListingResponse'
+  /api/v1/food-listings/{id}/publish:
+    post:
+      tags:
+      - food-listing-controller
+      operationId: publish
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FoodListingResponse'
+  /api/v1/food-listings/{id}/claim:
+    post:
+      tags:
+      - food-listing-controller
+      operationId: claim
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+  /api/v1/food-listings/{id}/cancel:
+    post:
+      tags:
+      - food-listing-controller
+      operationId: cancel
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FoodListingResponse'
+  /api/v1/food-listings/{id}:
+    get:
+      tags:
+      - food-listing-controller
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/FoodListingResponse'
+  /api/v1/food-listings/expiring:
+    get:
+      tags:
+      - food-listing-controller
+      operationId: expiring
+      parameters:
+      - name: withinMinutes
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FoodListingResponse'
+components:
+  schemas:
+    FlagSafetyReviewRequest:
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+    AiMetadataView:
+      type: object
+      properties:
+        category:
+          type: string
+        dietaryTypes:
+          type: array
+          items:
+            type: string
+        allergens:
+          type: array
+          items:
+            type: string
+        estimatedServings:
+          type: integer
+          format: int32
+        urgency:
+          type: string
+        missingInformation:
+          type: array
+          items:
+            type: string
+        suggestedDescription:
+          type: string
+        confidence:
+          type: number
+          format: double
+        analyzedAt:
+          type: string
+          format: date-time
+    FoodListingResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        donorOrgId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        foodCategory:
+          type: string
+        dietaryTypes:
+          type: array
+          items:
+            type: string
+        allergens:
+          type: array
+          items:
+            type: string
+        quantityValue:
+          type: number
+        quantityUnit:
+          type: string
+        estimatedServings:
+          type: integer
+          format: int32
+        expiryTime:
+          type: string
+          format: date-time
+        pickupStartTime:
+          type: string
+          format: date-time
+        pickupEndTime:
+          type: string
+          format: date-time
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        status:
+          type: string
+        verificationStatus:
+          type: string
+        aiMetadata:
+          $ref: '#/components/schemas/AiMetadataView'
+        requiresSafetyReview:
+          type: boolean
+        safetyReviewReason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    UpdateAiMetadataRequest:
+      required:
+      - category
+      type: object
+      properties:
+        category:
+          type: string
+        dietaryTypes:
+          type: array
+          items:
+            type: string
+        allergens:
+          type: array
+          items:
+            type: string
+        estimatedServings:
+          type: integer
+          format: int32
+        urgency:
+          type: string
+        missingInformation:
+          type: array
+          items:
+            type: string
+        suggestedDescription:
+          type: string
+        confidence:
+          type: number
+          format: double
+    CreateFoodListingRequest:
+      required:
+      - donorOrgId
+      - expiryTime
+      - foodCategory
+      - latitude
+      - longitude
+      - pickupEndTime
+      - pickupStartTime
+      - quantityUnit
+      - quantityValue
+      - title
+      type: object
+      properties:
+        donorOrgId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        foodCategory:
+          type: string
+          enum:
+          - COOKED_MEAL
+          - PACKAGED
+          - PRODUCE
+          - BAKERY
+          - DAIRY
+          - BEVERAGE
+          - OTHER
+        dietaryTypes:
+          type: array
+          items:
+            type: string
+        allergens:
+          type: array
+          items:
+            type: string
+        quantityValue:
+          type: number
+        quantityUnit:
+          type: string
+          enum:
+          - SERVINGS
+          - KG
+          - BOXES
+          - LITERS
+          - PIECES
+        estimatedServings:
+          type: integer
+          format: int32
+        preparationTime:
+          type: string
+          format: date-time
+        expiryTime:
+          type: string
+          format: date-time
+        pickupStartTime:
+          type: string
+          format: date-time
+        pickupEndTime:
+          type: string
+          format: date-time
+        latitude:
+          maximum: 90.0
+          exclusiveMaximum: false
+          minimum: -90.0
+          exclusiveMinimum: false
+          type: number
+        longitude:
+          maximum: 180.0
+          exclusiveMaximum: false
+          minimum: -180.0
+          exclusiveMinimum: false
+          type: number
+    ClaimRequest:
+      type: object
+      properties:
+        receiverOrgId:
+          type: string
+          format: uuid
+    ClaimResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        foodListingId:
+          type: string
+          format: uuid
+        receiverUserId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        claimedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+    PageFoodListingResponse:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        pageable:
+          $ref: '#/components/schemas/PageableObject'
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/FoodListingResponse'
+        number:
+          type: integer
+          format: int32
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/SortObject'
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        unpaged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        paged:
+          type: boolean
+        pageSize:
+          type: integer
+          format: int32
+        offset:
+          type: integer
+          format: int64
+        sort:
+          type: array
+          items:
+            $ref: '#/components/schemas/SortObject'
+    SortObject:
+      type: object
+      properties:
+        direction:
+          type: string
+        nullHandling:
+          type: string
+        ascending:
+          type: boolean
+        property:
+          type: string
+        ignoreCase:
+          type: boolean
