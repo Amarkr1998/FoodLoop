@@ -18,7 +18,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-foodloop}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-foodloop_dev_only}
     ports:
-      - "5432:5432"
+      # Host port 5433, not 5432: a separately-installed native PostgreSQL
+      # 18 Windows service already owns 5432 on this machine, and clients
+      # connecting to "localhost:5432" were silently reaching that native
+      # server instead of this container (it has no foodloop role/database,
+      # hence odd auth failures). Every in-cluster service still talks to
+      # this container via the internal Docker DNS name postgres:5432
+      # (application-docker.yml), so this only affects host-side tools.
+      - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:

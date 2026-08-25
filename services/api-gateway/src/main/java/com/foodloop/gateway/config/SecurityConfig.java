@@ -2,6 +2,7 @@ package com.foodloop.gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
@@ -23,8 +24,14 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange
+                        // Browsers send an unauthenticated OPTIONS preflight before any
+                        // cross-origin request carrying a custom header (Authorization
+                        // included) — without this, apps/web's every authenticated
+                        // fetch() fails the preflight itself with 401, which surfaces to
+                        // the browser as an opaque "Failed to fetch", not a real status.
+                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
-                        .pathMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/auth/register").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}))
                 .build();
